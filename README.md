@@ -6,6 +6,17 @@ Aplikasi ujian berbasis komputer (CBT) yang terdiri dari:
 
 ---
 
+## 🛠️ Ringkasan Stack Teknologi
+
+| Komponen | Bahasa / Framework | Library / Utility Utama | Fungsi Utama |
+| :--- | :--- | :--- | :--- |
+| **Backend Server** | JavaScript (Node.js) | `express`, `path`, `fs` | REST API, manajemen data, pengacakan & penilaian |
+| **Database Server** | JSON Storage | Atomic file write (`.tmp` -> `fs.renameSync`) | Menyimpan master data user, soal, jawaban, hasil |
+| **Web Frontend** | HTML5 / CSS3 / Vanilla JS | DOM API, `fetch()` | Dashboard guru, bank soal, monitoring live |
+| **Mobile App** | Dart (Flutter SDK) | `http`, `sqflite`, `shared_preferences` | UI Ujian siswa, caching lokal SQLite, auto-sync |
+
+---
+
 ## 📁 Struktur Folder
 
 ```
@@ -32,10 +43,7 @@ cbt_mobile_app/
 │   │       └── db_helper.dart
 │   └── pubspec.yaml
 │
-├── assets/               ← Gambar referensi UI
-├── analisis_sistem.md    ← Dokumentasi analisis sistem
-├── perancangan_database.md ← Dokumentasi skema database
-└── perancangan_ui.md     ← Dokumentasi rancangan UI
+└── .gitignore
 ```
 
 ---
@@ -50,7 +58,7 @@ cbt_mobile_app/
 
 **2. Masuk ke folder backend:**
 ```bash
-cd C:\Users\LENOVO\.gemini\antigravity\scratch\cbt_mobile_app\cbt_backend
+cd cbt_backend
 ```
 
 **3. Install dependencies (hanya pertama kali):**
@@ -91,7 +99,7 @@ http://localhost:3000
 
 **1. Buka terminal dan masuk ke folder Flutter:**
 ```bash
-cd C:\Users\LENOVO\.gemini\antigravity\scratch\cbt_mobile_app\cbt_mobile_app
+cd cbt_mobile_app
 ```
 
 **2. Install Flutter dependencies:**
@@ -103,8 +111,6 @@ flutter pub get
 ```bash
 flutter run
 ```
-
-> **Pastikan IP server** di file `lib/services/api_service.dart` sudah sesuai dengan IP komputer Anda jika menggunakan perangkat fisik.
 
 ---
 
@@ -118,7 +124,7 @@ flutter run
 - ✅ Buat paket bank soal (PG & Essay)
 - ✅ Edit / hapus butir soal
 - ✅ Rilis & kelola sesi ujian
-- ✅ **Hapus ujian yang sudah mati/tidak aktif**
+- ✅ Hapus ujian yang sudah mati/tidak aktif
 - ✅ Live monitoring pengerjaan siswa
 - ✅ Koreksi jawaban essay
 
@@ -126,5 +132,5 @@ flutter run
 - ✅ Login dengan NIS & password
 - ✅ Lihat daftar ujian aktif
 - ✅ Kerjakan soal PG & Essay
-- ✅ Auto-save jawaban setiap 10 detik
+- ✅ Auto-save jawaban & sync latar belakang
 - ✅ Lihat hasil setelah selesai ujian
