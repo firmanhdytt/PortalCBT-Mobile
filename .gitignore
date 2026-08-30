@@ -1,0 +1,19 @@
+# Build & dependency directories
+node_modules/
+.dart_tool/
+build/
+.gradle/
+.idea/
+.vscode/
+*.iml
+*.log
+
+# Temporary database files
+*.tmp
+
+# Binaries
+*.apk
+
+# Miscellaneous
+.DS_Store
+Thumbs.db

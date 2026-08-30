@@ -1,0 +1,612 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "admin",
+      "role": "admin"
+    },
+    {
+      "id": 2,
+      "username": "guru",
+      "password": "guru",
+      "role": "guru"
+    },
+    {
+      "id": 3,
+      "username": "siswa",
+      "password": "siswa",
+      "role": "siswa"
+    },
+    {
+      "id": 4,
+      "username": "siswa2",
+      "password": "siswa2",
+      "role": "siswa"
+    },
+    {
+      "username": "2026999",
+      "password": "mypassword123",
+      "role": "siswa",
+      "id": 6
+    },
+    {
+      "username": "2023020153",
+      "password": "123",
+      "role": "siswa",
+      "id": 8
+    }
+  ],
+  "kelas": [
+    {
+      "id": 1,
+      "nama_kelas": "XII RPL 1"
+    },
+    {
+      "id": 2,
+      "nama_kelas": "XII RPL 2"
+    }
+  ],
+  "mata_pelajaran": [
+    {
+      "id": 1,
+      "kode_mapel": "INF-12",
+      "nama_mapel": "Informatika"
+    },
+    {
+      "id": 2,
+      "kode_mapel": "MAT-12",
+      "nama_mapel": "Matematika"
+    }
+  ],
+  "siswa": [
+    {
+      "id": 1,
+      "user_id": 3,
+      "nis": "2026001",
+      "nama": "Ahmad Rifai",
+      "kelas_id": 1,
+      "nama_kelas": "XII RPL 1"
+    },
+    {
+      "id": 2,
+      "user_id": 4,
+      "nis": "2026002",
+      "nama": "Siti Aminah",
+      "kelas_id": 1,
+      "nama_kelas": "XII RPL 1"
+    },
+    {
+      "user_id": 6,
+      "nis": "2026999",
+      "nama": "Testing Student",
+      "kelas_id": 1,
+      "nama_kelas": "XII RPL 1",
+      "id": 4
+    },
+    {
+      "user_id": 8,
+      "nis": "2023020153",
+      "nama": "Firman Hidayat",
+      "kelas_id": 2,
+      "nama_kelas": "XII RPL 2",
+      "id": 6
+    }
+  ],
+  "guru": [
+    {
+      "id": 1,
+      "user_id": 2,
+      "nip": "1928392183",
+      "nama": "Budi Santoso, M.Pd."
+    }
+  ],
+  "bank_soal": [
+    {
+      "id": 1,
+      "mapel_id": 1,
+      "guru_id": 1,
+      "judul": "Soal UAS Informatika Kelas XII"
+    }
+  ],
+  "soal": [
+    {
+      "id": 1,
+      "bank_soal_id": 1,
+      "jenis_soal": "PG",
+      "teks_soal": "Manakah di bawah ini yang merupakan bahasa pemrograman utama untuk pengembangan aplikasi Flutter?",
+      "gambar_url": "",
+      "bobot": 20
+    },
+    {
+      "id": 2,
+      "bank_soal_id": 1,
+      "jenis_soal": "PG",
+      "teks_soal": "Database lokal yang sering digunakan pada aplikasi mobile Flutter untuk menyimpan data secara luring (offline) adalah...",
+      "gambar_url": "",
+      "bobot": 20
+    },
+    {
+      "id": 3,
+      "bank_soal_id": 1,
+      "jenis_soal": "PG",
+      "teks_soal": "Widget dalam Flutter yang berfungsi untuk menata elemen secara vertikal dari atas ke bawah adalah...",
+      "gambar_url": "",
+      "bobot": 20
+    },
+    {
+      "id": 4,
+      "bank_soal_id": 1,
+      "jenis_soal": "ESSAY",
+      "teks_soal": "Jelaskan secara singkat apa keuntungan menggunakan Flutter untuk membuat aplikasi mobile!",
+      "gambar_url": "",
+      "bobot": 40
+    },
+    {
+      "bank_soal_id": 1,
+      "jenis_soal": "PG",
+      "teks_soal": "siapa pencetus laboratorium global fish",
+      "gambar_url": "",
+      "bobot": 10,
+      "nomor_urut": 5,
+      "id": 5
+    }
+  ],
+  "pilihan_jawaban": [
+    {
+      "id": 1,
+      "soal_id": 1,
+      "teks_pilihan": "Python",
+      "label": "A",
+      "is_kunci": false
+    },
+    {
+      "id": 2,
+      "soal_id": 1,
+      "teks_pilihan": "Java",
+      "label": "B",
+      "is_kunci": false
+    },
+    {
+      "id": 3,
+      "soal_id": 1,
+      "teks_pilihan": "Dart",
+      "label": "C",
+      "is_kunci": true
+    },
+    {
+      "id": 4,
+      "soal_id": 1,
+      "teks_pilihan": "Swift",
+      "label": "D",
+      "is_kunci": false
+    },
+    {
+      "id": 5,
+      "soal_id": 1,
+      "teks_pilihan": "Kotlin",
+      "label": "E",
+      "is_kunci": false
+    },
+    {
+      "id": 6,
+      "soal_id": 2,
+      "teks_pilihan": "MySQL",
+      "label": "A",
+      "is_kunci": false
+    },
+    {
+      "id": 7,
+      "soal_id": 2,
+      "teks_pilihan": "MongoDB",
+      "label": "B",
+      "is_kunci": false
+    },
+    {
+      "id": 8,
+      "soal_id": 2,
+      "teks_pilihan": "SQLite",
+      "label": "C",
+      "is_kunci": true
+    },
+    {
+      "id": 9,
+      "soal_id": 2,
+      "teks_pilihan": "Redis",
+      "label": "D",
+      "is_kunci": false
+    },
+    {
+      "id": 10,
+      "soal_id": 2,
+      "teks_pilihan": "Oracle",
+      "label": "E",
+      "is_kunci": false
+    },
+    {
+      "id": 11,
+      "soal_id": 3,
+      "teks_pilihan": "Row",
+      "label": "A",
+      "is_kunci": false
+    },
+    {
+      "id": 12,
+      "soal_id": 3,
+      "teks_pilihan": "Column",
+      "label": "B",
+      "is_kunci": true
+    },
+    {
+      "id": 13,
+      "soal_id": 3,
+      "teks_pilihan": "Stack",
+      "label": "C",
+      "is_kunci": false
+    },
+    {
+      "id": 14,
+      "soal_id": 3,
+      "teks_pilihan": "ListView",
+      "label": "D",
+      "is_kunci": false
+    },
+    {
+      "id": 15,
+      "soal_id": 3,
+      "teks_pilihan": "Container",
+      "label": "E",
+      "is_kunci": false
+    },
+    {
+      "soal_id": 5,
+      "teks_pilihan": "agus",
+      "label": "A",
+      "is_kunci": true,
+      "id": 16
+    },
+    {
+      "soal_id": 5,
+      "teks_pilihan": "asep",
+      "label": "B",
+      "is_kunci": false,
+      "id": 17
+    },
+    {
+      "soal_id": 5,
+      "teks_pilihan": "agil",
+      "label": "C",
+      "is_kunci": false,
+      "id": 18
+    },
+    {
+      "soal_id": 5,
+      "teks_pilihan": "andi",
+      "label": "D",
+      "is_kunci": false,
+      "id": 19
+    },
+    {
+      "soal_id": 5,
+      "teks_pilihan": "aan",
+      "label": "E",
+      "is_kunci": false,
+      "id": 20
+    }
+  ],
+  "ujian": [
+    {
+      "id": 1,
+      "nama_ujian": "Ujian Akhir Informatika",
+      "bank_soal_id": 1,
+      "kelas_id": 1,
+      "token": "INF123",
+      "durasi_menit": 60,
+      "waktu_mulai": "2026-07-26 08:00",
+      "waktu_selesai": "2099-12-31 23:59",
+      "is_aktif": true
+    },
+    {
+      "nama_ujian": "UJIAN CPNS",
+      "bank_soal_id": 1,
+      "kelas_id": 2,
+      "token": "123456",
+      "durasi_menit": 60,
+      "waktu_mulai": "2026-07-26T12:38:55.901Z",
+      "waktu_selesai": "2026-07-27T12:38:55.901Z",
+      "is_aktif": false,
+      "id": 2
+    },
+    {
+      "nama_ujian": "UJIAN HIDUP",
+      "bank_soal_id": 1,
+      "kelas_id": 1,
+      "token": "112233",
+      "durasi_menit": 60,
+      "waktu_mulai": "2026-07-26T12:54:45.850Z",
+      "waktu_selesai": "2026-07-27T12:54:45.850Z",
+      "is_aktif": false,
+      "id": 3
+    }
+  ],
+  "jawaban_peserta": [
+    {
+      "siswa_id": 1,
+      "ujian_id": 1,
+      "soal_id": 1,
+      "pilihan_jawaban_id": 3,
+      "teks_jawaban_essay": "",
+      "is_ragu": 1,
+      "waktu_dijawab": "2026-07-26T13:14:58.656Z",
+      "id": 1
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 1,
+      "soal_id": 2,
+      "pilihan_jawaban_id": 8,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T13:14:58.661Z",
+      "id": 2
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 1,
+      "soal_id": 3,
+      "pilihan_jawaban_id": 12,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T13:14:58.666Z",
+      "id": 3
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 1,
+      "soal_id": 4,
+      "pilihan_jawaban_id": null,
+      "teks_jawaban_essay": "r",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T13:14:58.673Z",
+      "id": 4,
+      "nilai_manual": 100
+    },
+    {
+      "siswa_id": 2,
+      "ujian_id": 1,
+      "soal_id": 1,
+      "pilihan_jawaban_id": null,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T12:46:47.589Z",
+      "id": 5
+    },
+    {
+      "siswa_id": 2,
+      "ujian_id": 1,
+      "soal_id": 2,
+      "pilihan_jawaban_id": null,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T12:46:47.598Z",
+      "id": 6
+    },
+    {
+      "siswa_id": 2,
+      "ujian_id": 1,
+      "soal_id": 3,
+      "pilihan_jawaban_id": null,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T12:46:47.606Z",
+      "id": 7
+    },
+    {
+      "siswa_id": 2,
+      "ujian_id": 1,
+      "soal_id": 4,
+      "pilihan_jawaban_id": null,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T12:46:47.611Z",
+      "id": 8
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 3,
+      "soal_id": 1,
+      "pilihan_jawaban_id": 3,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T13:00:42.010Z",
+      "id": 9
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 3,
+      "soal_id": 2,
+      "pilihan_jawaban_id": 8,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T13:00:42.014Z",
+      "id": 10
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 3,
+      "soal_id": 3,
+      "pilihan_jawaban_id": 12,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T13:00:42.024Z",
+      "id": 11
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 3,
+      "soal_id": 4,
+      "pilihan_jawaban_id": null,
+      "teks_jawaban_essay": "ww",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T13:00:42.029Z",
+      "id": 12
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 1,
+      "soal_id": 5,
+      "pilihan_jawaban_id": 19,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T13:14:58.677Z",
+      "id": 13
+    },
+    {
+      "siswa_id": 2,
+      "ujian_id": 3,
+      "soal_id": 1,
+      "pilihan_jawaban_id": 4,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T13:19:42.950Z",
+      "id": 14
+    },
+    {
+      "siswa_id": 2,
+      "ujian_id": 3,
+      "soal_id": 2,
+      "pilihan_jawaban_id": 9,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T13:19:42.957Z",
+      "id": 15
+    },
+    {
+      "siswa_id": 2,
+      "ujian_id": 3,
+      "soal_id": 3,
+      "pilihan_jawaban_id": 12,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T13:19:42.963Z",
+      "id": 16
+    },
+    {
+      "siswa_id": 2,
+      "ujian_id": 3,
+      "soal_id": 4,
+      "pilihan_jawaban_id": null,
+      "teks_jawaban_essay": "wd",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T13:19:42.967Z",
+      "id": 17
+    },
+    {
+      "siswa_id": 2,
+      "ujian_id": 3,
+      "soal_id": 5,
+      "pilihan_jawaban_id": 20,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T13:19:42.972Z",
+      "id": 18
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 2,
+      "soal_id": 1,
+      "pilihan_jawaban_id": 3,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T14:21:32.243Z",
+      "id": 19
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 2,
+      "soal_id": 2,
+      "pilihan_jawaban_id": 8,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T14:21:32.247Z",
+      "id": 20
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 2,
+      "soal_id": 3,
+      "pilihan_jawaban_id": 12,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T14:21:32.254Z",
+      "id": 21
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 2,
+      "soal_id": 4,
+      "pilihan_jawaban_id": null,
+      "teks_jawaban_essay": "2",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T14:21:32.258Z",
+      "id": 22
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 2,
+      "soal_id": 5,
+      "pilihan_jawaban_id": 16,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-07-26T14:21:32.265Z",
+      "id": 23
+    }
+  ],
+  "hasil_ujian": [
+    {
+      "siswa_id": 1,
+      "ujian_id": 1,
+      "jumlah_benar": 3,
+      "jumlah_salah": 1,
+      "nilai_akhir": 60,
+      "waktu_selesai": "2026-07-26T13:14:58.700Z",
+      "id": 1
+    },
+    {
+      "siswa_id": 2,
+      "ujian_id": 1,
+      "jumlah_benar": 3,
+      "jumlah_salah": 0,
+      "nilai_akhir": 60,
+      "waktu_selesai": "2026-07-26T12:45:20.655Z",
+      "id": 2
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 3,
+      "jumlah_benar": 3,
+      "jumlah_salah": 0,
+      "nilai_akhir": 60,
+      "waktu_selesai": "2026-07-26T13:00:42.052Z",
+      "id": 3
+    },
+    {
+      "siswa_id": 2,
+      "ujian_id": 3,
+      "jumlah_benar": 1,
+      "jumlah_salah": 3,
+      "nilai_akhir": 20,
+      "waktu_selesai": "2026-07-26T13:19:42.993Z",
+      "id": 4
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 2,
+      "jumlah_benar": 4,
+      "jumlah_salah": 0,
+      "nilai_akhir": 70,
+      "waktu_selesai": "2026-07-26T14:21:32.287Z",
+      "id": 5
+    }
+  ]
+}
