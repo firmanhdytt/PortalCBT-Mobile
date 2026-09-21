@@ -45,7 +45,17 @@ class _LoginPageState extends State<LoginPage> {
     final res = await ApiService.login(username, password);
     setState(() => _isLoading = false);
 
-    if (res != null && res['user']['role'] == 'siswa') {
+    if (res == null) {
+      _showSnackbar("Gagal terhubung ke server! Periksa IP Server & Wi-Fi.");
+      return;
+    }
+
+    if (res['user'] != null && res['user']['role'] != 'siswa') {
+      _showSnackbar("Akun Admin & Guru hanya dapat login via Portal Web!");
+      return;
+    }
+
+    if (res['user'] != null && res['user']['role'] == 'siswa' && res['profil'] != null) {
       final profil = Map<String, dynamic>.from(res['profil']);
       await DbHelper.saveSiswa(profil);
 

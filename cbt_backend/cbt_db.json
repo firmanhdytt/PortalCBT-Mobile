@@ -57,6 +57,11 @@
       "id": 2,
       "kode_mapel": "MAT-12",
       "nama_mapel": "Matematika"
+    },
+    {
+      "kode_mapel": "IT-01",
+      "nama_mapel": "Sistem Informasi",
+      "id": 3
     }
   ],
   "siswa": [
@@ -107,6 +112,12 @@
       "mapel_id": 1,
       "guru_id": 1,
       "judul": "Soal UAS Informatika Kelas XII"
+    },
+    {
+      "mapel_id": 3,
+      "guru_id": 1,
+      "judul": "UJIAN KELULUSAN",
+      "id": 2
     }
   ],
   "soal": [
@@ -150,6 +161,60 @@
       "bobot": 10,
       "nomor_urut": 5,
       "id": 5
+    },
+    {
+      "bank_soal_id": 2,
+      "jenis_soal": "PG",
+      "teks_soal": "as",
+      "gambar_url": "",
+      "bobot": 10,
+      "nomor_urut": 1,
+      "id": 6
+    },
+    {
+      "bank_soal_id": 2,
+      "jenis_soal": "PG",
+      "teks_soal": "ab",
+      "gambar_url": "",
+      "bobot": 10,
+      "nomor_urut": 2,
+      "id": 7
+    },
+    {
+      "bank_soal_id": 2,
+      "jenis_soal": "PG",
+      "teks_soal": "ac",
+      "gambar_url": "",
+      "bobot": 10,
+      "nomor_urut": 3,
+      "id": 8
+    },
+    {
+      "bank_soal_id": 2,
+      "jenis_soal": "PG",
+      "teks_soal": "ad",
+      "gambar_url": "",
+      "bobot": 10,
+      "nomor_urut": 4,
+      "id": 9
+    },
+    {
+      "bank_soal_id": 2,
+      "jenis_soal": "PG",
+      "teks_soal": "ae",
+      "gambar_url": "",
+      "bobot": 10,
+      "nomor_urut": 5,
+      "id": 10
+    },
+    {
+      "bank_soal_id": 2,
+      "jenis_soal": "ESSAY",
+      "teks_soal": "abc",
+      "gambar_url": "",
+      "bobot": 10,
+      "nomor_urut": 6,
+      "id": 11
     }
   ],
   "pilihan_jawaban": [
@@ -292,6 +357,181 @@
       "label": "E",
       "is_kunci": false,
       "id": 20
+    },
+    {
+      "soal_id": 6,
+      "teks_pilihan": "as",
+      "label": "A",
+      "is_kunci": true,
+      "id": 21
+    },
+    {
+      "soal_id": 6,
+      "teks_pilihan": "as",
+      "label": "B",
+      "is_kunci": false,
+      "id": 22
+    },
+    {
+      "soal_id": 6,
+      "teks_pilihan": "as",
+      "label": "C",
+      "is_kunci": false,
+      "id": 23
+    },
+    {
+      "soal_id": 6,
+      "teks_pilihan": "as",
+      "label": "D",
+      "is_kunci": false,
+      "id": 24
+    },
+    {
+      "soal_id": 6,
+      "teks_pilihan": "as",
+      "label": "E",
+      "is_kunci": false,
+      "id": 25
+    },
+    {
+      "soal_id": 7,
+      "teks_pilihan": "ab",
+      "label": "A",
+      "is_kunci": false,
+      "id": 26
+    },
+    {
+      "soal_id": 7,
+      "teks_pilihan": "ab",
+      "label": "B",
+      "is_kunci": true,
+      "id": 27
+    },
+    {
+      "soal_id": 7,
+      "teks_pilihan": "ab",
+      "label": "C",
+      "is_kunci": false,
+      "id": 28
+    },
+    {
+      "soal_id": 7,
+      "teks_pilihan": "ab",
+      "label": "D",
+      "is_kunci": false,
+      "id": 29
+    },
+    {
+      "soal_id": 7,
+      "teks_pilihan": "ab",
+      "label": "E",
+      "is_kunci": false,
+      "id": 30
+    },
+    {
+      "soal_id": 8,
+      "teks_pilihan": "ac",
+      "label": "A",
+      "is_kunci": false,
+      "id": 31
+    },
+    {
+      "soal_id": 8,
+      "teks_pilihan": "ac",
+      "label": "B",
+      "is_kunci": false,
+      "id": 32
+    },
+    {
+      "soal_id": 8,
+      "teks_pilihan": "ac",
+      "label": "C",
+      "is_kunci": true,
+      "id": 33
+    },
+    {
+      "soal_id": 8,
+      "teks_pilihan": "ac",
+      "label": "D",
+      "is_kunci": false,
+      "id": 34
+    },
+    {
+      "soal_id": 8,
+      "teks_pilihan": "ac",
+      "label": "E",
+      "is_kunci": false,
+      "id": 35
+    },
+    {
+      "soal_id": 9,
+      "teks_pilihan": "ad",
+      "label": "A",
+      "is_kunci": false,
+      "id": 36
+    },
+    {
+      "soal_id": 9,
+      "teks_pilihan": "ad",
+      "label": "B",
+      "is_kunci": false,
+      "id": 37
+    },
+    {
+      "soal_id": 9,
+      "teks_pilihan": "ad",
+      "label": "C",
+      "is_kunci": false,
+      "id": 38
+    },
+    {
+      "soal_id": 9,
+      "teks_pilihan": "ad",
+      "label": "D",
+      "is_kunci": true,
+      "id": 39
+    },
+    {
+      "soal_id": 9,
+      "teks_pilihan": "ad",
+      "label": "E",
+      "is_kunci": false,
+      "id": 40
+    },
+    {
+      "soal_id": 10,
+      "teks_pilihan": "ae",
+      "label": "A",
+      "is_kunci": false,
+      "id": 41
+    },
+    {
+      "soal_id": 10,
+      "teks_pilihan": "ae",
+      "label": "B",
+      "is_kunci": false,
+      "id": 42
+    },
+    {
+      "soal_id": 10,
+      "teks_pilihan": "ae",
+      "label": "C",
+      "is_kunci": false,
+      "id": 43
+    },
+    {
+      "soal_id": 10,
+      "teks_pilihan": "ae",
+      "label": "D",
+      "is_kunci": false,
+      "id": 44
+    },
+    {
+      "soal_id": 10,
+      "teks_pilihan": "ae",
+      "label": "E",
+      "is_kunci": true,
+      "id": 45
     }
   ],
   "ujian": [
@@ -304,7 +544,7 @@
       "durasi_menit": 60,
       "waktu_mulai": "2026-07-26 08:00",
       "waktu_selesai": "2099-12-31 23:59",
-      "is_aktif": true
+      "is_aktif": false
     },
     {
       "nama_ujian": "UJIAN CPNS",
@@ -327,6 +567,28 @@
       "waktu_selesai": "2026-07-27T12:54:45.850Z",
       "is_aktif": false,
       "id": 3
+    },
+    {
+      "nama_ujian": "UJIAN KELULUSAN",
+      "bank_soal_id": 2,
+      "kelas_id": 2,
+      "token": "YYYZ3X",
+      "durasi_menit": 60,
+      "waktu_mulai": "2026-09-21T09:42:47.111Z",
+      "waktu_selesai": "2026-09-22T09:42:47.111Z",
+      "is_aktif": false,
+      "id": 4
+    },
+    {
+      "nama_ujian": "TES ULANG",
+      "bank_soal_id": 2,
+      "kelas_id": 2,
+      "token": "123123",
+      "durasi_menit": 60,
+      "waktu_mulai": "2026-09-21T09:51:39.678Z",
+      "waktu_selesai": "2026-09-22T09:51:39.678Z",
+      "is_aktif": false,
+      "id": 5
     }
   ],
   "jawaban_peserta": [
@@ -560,6 +822,127 @@
       "is_ragu": 0,
       "waktu_dijawab": "2026-07-26T14:21:32.265Z",
       "id": 23
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 4,
+      "soal_id": 6,
+      "pilihan_jawaban_id": 21,
+      "teks_jawaban_essay": "",
+      "is_ragu": 1,
+      "waktu_dijawab": "2026-09-21T09:46:12.854Z",
+      "id": 24
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 4,
+      "soal_id": 7,
+      "pilihan_jawaban_id": 27,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T09:46:12.893Z",
+      "id": 25
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 4,
+      "soal_id": 8,
+      "pilihan_jawaban_id": 33,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T09:46:12.932Z",
+      "id": 26
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 4,
+      "soal_id": 9,
+      "pilihan_jawaban_id": 39,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T09:46:12.990Z",
+      "id": 27
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 4,
+      "soal_id": 10,
+      "pilihan_jawaban_id": 45,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T09:46:13.049Z",
+      "id": 28
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 4,
+      "soal_id": 11,
+      "pilihan_jawaban_id": null,
+      "teks_jawaban_essay": "abs",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T09:46:13.071Z",
+      "id": 29,
+      "nilai_manual": 40
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 5,
+      "soal_id": 9,
+      "pilihan_jawaban_id": 36,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T09:52:12.324Z",
+      "id": 30
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 5,
+      "soal_id": 7,
+      "pilihan_jawaban_id": 27,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T09:52:27.286Z",
+      "id": 31
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 5,
+      "soal_id": 6,
+      "pilihan_jawaban_id": 22,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T09:52:27.292Z",
+      "id": 32
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 5,
+      "soal_id": 11,
+      "pilihan_jawaban_id": null,
+      "teks_jawaban_essay": "as",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T09:52:27.299Z",
+      "id": 33
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 5,
+      "soal_id": 10,
+      "pilihan_jawaban_id": 45,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T09:52:27.305Z",
+      "id": 34
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 5,
+      "soal_id": 8,
+      "pilihan_jawaban_id": 33,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T09:52:27.311Z",
+      "id": 35
     }
   ],
   "hasil_ujian": [
@@ -607,6 +990,24 @@
       "nilai_akhir": 70,
       "waktu_selesai": "2026-07-26T14:21:32.287Z",
       "id": 5
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 4,
+      "jumlah_benar": 5,
+      "jumlah_salah": 0,
+      "nilai_akhir": 90,
+      "waktu_selesai": "2026-09-21T09:46:13.148Z",
+      "id": 6
+    },
+    {
+      "siswa_id": 6,
+      "ujian_id": 5,
+      "jumlah_benar": 3,
+      "jumlah_salah": 2,
+      "nilai_akhir": 30,
+      "waktu_selesai": "2026-09-21T09:52:28.434Z",
+      "id": 7
     }
   ]
 }
