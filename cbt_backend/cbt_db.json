@@ -589,6 +589,17 @@
       "waktu_selesai": "2026-09-22T09:51:39.678Z",
       "is_aktif": false,
       "id": 5
+    },
+    {
+      "nama_ujian": "TESSS",
+      "bank_soal_id": 2,
+      "kelas_id": 1,
+      "token": "1122",
+      "durasi_menit": 60,
+      "waktu_mulai": "2026-09-21T12:57:01.165Z",
+      "waktu_selesai": "2026-09-22T12:57:01.165Z",
+      "is_aktif": true,
+      "id": 6
     }
   ],
   "jawaban_peserta": [
@@ -943,6 +954,67 @@
       "is_ragu": 0,
       "waktu_dijawab": "2026-09-21T09:52:27.311Z",
       "id": 35
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 6,
+      "soal_id": 6,
+      "pilihan_jawaban_id": 22,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T12:57:57.798Z",
+      "id": 36
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 6,
+      "soal_id": 9,
+      "pilihan_jawaban_id": 38,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T12:58:12.575Z",
+      "id": 37
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 6,
+      "soal_id": 10,
+      "pilihan_jawaban_id": 45,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T12:58:25.120Z",
+      "id": 38
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 6,
+      "soal_id": 11,
+      "pilihan_jawaban_id": null,
+      "teks_jawaban_essay": "yj",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T12:58:25.125Z",
+      "id": 39,
+      "nilai_manual": 10
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 6,
+      "soal_id": 7,
+      "pilihan_jawaban_id": null,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T12:58:25.129Z",
+      "id": 40
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 6,
+      "soal_id": 8,
+      "pilihan_jawaban_id": 33,
+      "teks_jawaban_essay": "",
+      "is_ragu": 0,
+      "waktu_dijawab": "2026-09-21T12:58:25.137Z",
+      "id": 41
     }
   ],
   "hasil_ujian": [
@@ -1008,6 +1080,15 @@
       "nilai_akhir": 30,
       "waktu_selesai": "2026-09-21T09:52:28.434Z",
       "id": 7
+    },
+    {
+      "siswa_id": 1,
+      "ujian_id": 6,
+      "jumlah_benar": 2,
+      "jumlah_salah": 3,
+      "nilai_akhir": 30,
+      "waktu_selesai": "2026-09-21T12:58:26.239Z",
+      "id": 8
     }
   ]
 }

@@ -11,18 +11,19 @@
   
   <style>
     :root {
-      --primary: #1E88E5;
-      --primary-hover: #1565C0;
+      --primary: #2563EB;
+      --primary-hover: #1D4ED8;
       --bg: #F8FAFC;
       --card-bg: #FFFFFF;
-      --text: #1E293B;
+      --text: #0F172A;
       --text-light: #64748B;
       --border: #E2E8F0;
       --success: #10B981;
       --danger: #EF4444;
       --warning: #F59E0B;
-      --radius: 12px;
-      --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+      --info: #06B6D4;
+      --radius: 14px;
+      --shadow: 0 10px 25px -5px rgba(15,23,42,0.06), 0 4px 6px -2px rgba(15,23,42,0.04);
       --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -41,29 +42,32 @@
     }
 
     /* ==============================================
-       1. LOGIN LAYOUT (MOBILE FIRST)
+       1. LOGIN LAYOUT (GLASSMORPHISM & MODERN CARD)
        ============================================== */
     #login-screen {
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      background: linear-gradient(135deg, #1E88E5 0%, #0D47A1 100%);
+      background: radial-gradient(circle at top left, #1E3A8A 0%, #0F172A 60%, #0284C7 100%);
       padding: 20px;
+      position: relative;
     }
 
     .login-card {
-      background: var(--card-bg);
-      padding: 30px;
-      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(12px);
+      padding: 35px 30px;
+      border-radius: 24px;
       width: 100%;
-      max-width: 400px;
-      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
+      max-width: 420px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       animation: slideUp 0.4s ease-out;
     }
 
     @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
+      from { opacity: 0; transform: translateY(24px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
@@ -72,47 +76,108 @@
       margin-bottom: 25px;
     }
 
+    .login-brand-icon {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      color: white;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-bottom: 12px;
+      box-shadow: 0 8px 16px -4px rgba(37, 99, 235, 0.4);
+    }
+
     .login-header h2 {
       font-size: 24px;
-      font-weight: 700;
-      color: var(--primary-hover);
+      font-weight: 800;
+      color: #0F172A;
+      letter-spacing: -0.5px;
     }
 
     .login-header p {
       color: var(--text-light);
       font-size: 13px;
-      margin-top: 5px;
+      margin-top: 4px;
     }
 
     .form-group {
       margin-bottom: 18px;
+      position: relative;
     }
 
     .form-group label {
       display: block;
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 700;
       text-transform: uppercase;
       margin-bottom: 6px;
       letter-spacing: 0.5px;
-      color: var(--text);
+      color: #334155;
     }
 
     .form-control {
       width: 100%;
-      padding: 12px 14px;
+      padding: 12px 16px;
       border: 1.5px solid var(--border);
       border-radius: var(--radius);
       font-size: 14px;
       font-family: inherit;
       color: var(--text);
       transition: var(--transition);
+      background-color: #F8FAFC;
     }
 
     .form-control:focus {
       outline: none;
+      background-color: #FFFFFF;
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.15);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .password-wrapper {
+      position: relative;
+    }
+
+    .password-toggle-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--text-light);
+    }
+
+    .quick-test-badges {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .quick-chip {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background-color: #F1F5F9;
+      color: #475569;
+      cursor: pointer;
+      transition: var(--transition);
+      border: 1px solid #E2E8F0;
+    }
+
+    .quick-chip:hover {
+      background-color: #DBEAFE;
+      color: #1E40AF;
+      border-color: #93C5FD;
     }
 
     .btn {
@@ -131,13 +196,70 @@
       gap: 8px;
     }
 
-    .btn-primary { background-color: var(--primary); color: white; }
-    .btn-primary:hover { background-color: var(--primary-hover); }
+    .btn-primary { 
+      background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); 
+      color: white; 
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+    .btn-primary:hover { 
+      background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%); 
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+      transform: translateY(-1px);
+    }
     .btn-block { width: 100%; }
     .btn-danger { background-color: var(--danger); color: white; }
     .btn-success { background-color: var(--success); color: white; }
-    .btn-secondary { background-color: #E2E8F0; color: var(--text); }
-    .btn-secondary:hover { background-color: #CBD5E1; }
+    .btn-secondary { background-color: #F1F5F9; color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background-color: #E2E8F0; }
+
+    /* Hero Banner for Dashboards */
+    .welcome-banner {
+      background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);
+      color: white;
+      padding: 24px 28px;
+      border-radius: 18px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.25);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .welcome-banner h2 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .welcome-banner p {
+      font-size: 13px;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+
+    .quick-actions-bar {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-banner-action {
+      background-color: rgba(255, 255, 255, 0.18);
+      color: white;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      font-size: 13px;
+      padding: 8px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-banner-action:hover {
+      background-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+    }
 
     /* ==============================================
        2. MAIN CONTAINER & SIDEBAR (GURU/ADMIN)
@@ -797,22 +919,35 @@
   <div id="login-screen">
     <div class="login-card">
       <div class="login-header">
+        <div class="login-brand-icon">💻</div>
         <h2>PORTAL CBT</h2>
-        <p>Gunakan akun guru, admin, atau siswa</p>
+        <p>Sistem Ujian Berbasis Komputer & Mobile</p>
       </div>
+
+      <div class="quick-test-badges">
+        <span class="quick-chip" onclick="quickFillLogin('admin','admin')">🔑 Admin</span>
+        <span class="quick-chip" onclick="quickFillLogin('guru','guru')">👨‍🏫 Guru</span>
+        <span class="quick-chip" onclick="quickFillLogin('siswa','siswa')">👨‍🎓 Siswa</span>
+      </div>
+
       <div class="form-group">
         <label for="login-username">Username / NIS</label>
-        <input type="text" id="login-username" class="form-control" placeholder="admin / guru / siswa...">
+        <input type="text" id="login-username" class="form-control" placeholder="Ketik admin, guru, atau siswa...">
       </div>
       <div class="form-group">
         <label for="login-password">Password</label>
-        <input type="password" id="login-password" class="form-control" placeholder="Masukkan password...">
+        <div class="password-wrapper">
+          <input type="password" id="login-password" class="form-control" placeholder="Masukkan password...">
+          <button type="button" class="password-toggle-btn" onclick="toggleWebPasswordVisibility('login-password', this)">👁️</button>
+        </div>
       </div>
-      <button class="btn btn-primary btn-block" onclick="handleLogin()">Login</button>
+      <button class="btn btn-primary btn-block" id="btn-login-submit" onclick="handleLogin()">
+        <span>MASUK KE SISTEM</span> ➔
+      </button>
       
-      <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border); text-align: center;">
-        <p style="font-size: 12px; color: var(--text-light); margin-bottom: 8px;">Ingin ujian dari HP Android tanpa kabel USB?</p>
-        <a href="/downloads/cbt-mobile.apk" download="cbt-mobile.apk" class="btn btn-secondary btn-block" style="font-size: 13px; text-decoration: none;">
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px dashed #CBD5E1; text-align: center;">
+        <p style="font-size: 12px; color: var(--text-light); margin-bottom: 10px; font-weight: 500;">Ujian praktis dari HP Android via Wi-Fi?</p>
+        <a href="/downloads/cbt-mobile.apk" download="cbt-mobile.apk" class="btn btn-secondary btn-block" style="font-size: 13px; text-decoration: none; border-radius: 12px;">
           📲 Download Aplikasi Android (APK)
         </a>
       </div>
@@ -859,32 +994,42 @@
 
       <!-- PAGE: DASHBOARD GURU -->
       <div id="page-db-guru" class="page-view">
-        <div class="header-main">
-          <h1>Dashboard Guru</h1>
+        <div class="welcome-banner">
+          <div>
+            <h2 id="guru-greeting-title">Selamat Datang, Guru! 👋</h2>
+            <p>Kelola paket bank soal, rilis jadwal ujian, dan pantau progres pengerjaan siswa secara live.</p>
+          </div>
+          <div class="quick-actions-bar">
+            <button class="btn-banner-action" onclick="showPage('soal')">📝 + Paket Soal</button>
+            <button class="btn-banner-action" onclick="showPage('ujian')">🚀 + Rilis Ujian</button>
+            <button class="btn-banner-action" onclick="showPage('monitoring')">📡 Monitoring Live</button>
+          </div>
         </div>
+
         <div class="grid-stats">
-          <div class="stat-card">
-            <span>Ujian Aktif</span>
+          <div class="stat-card" style="border-left: 4px solid var(--primary);">
+            <span>Ujian Aktif Hari Ini</span>
             <h2 id="guru-stat-ujian">0</h2>
           </div>
-          <div class="stat-card">
-            <span>Paket Soal</span>
+          <div class="stat-card" style="border-left: 4px solid var(--success);">
+            <span>Paket Bank Soal</span>
             <h2 id="guru-stat-bank">0</h2>
           </div>
         </div>
-        <div class="card">
+
+        <div class="card" style="margin-top: 20px;">
           <div class="card-title-bar">
-            <h3>Jadwal Ujian Aktif</h3>
+            <h3>Jadwal Ujian Aktif & Riwayat</h3>
           </div>
           <div class="table-container">
             <table>
               <thead>
                 <tr>
                   <th>Nama Ujian</th>
-                  <th>Kelas</th>
+                  <th>Kelas Target</th>
                   <th>Token</th>
                   <th>Durasi</th>
-                  <th>Status</th>
+                  <th>Status Sesi</th>
                   <th>Aksi</th>
                 </tr>
               </thead>
@@ -1017,16 +1162,25 @@
 
       <!-- PAGE: DASHBOARD ADMIN -->
       <div id="page-db-admin" class="page-view">
-        <div class="header-main">
-          <h1>Dashboard Administrator</h1>
+        <div class="welcome-banner" style="background: linear-gradient(135deg, #0F172A 0%, #334155 100%);">
+          <div>
+            <h2>Panel Administrator CBT 🛡️</h2>
+            <p>Kelola data master pengguna, kelas, serta mata pelajaran institusi.</p>
+          </div>
+          <div class="quick-actions-bar">
+            <button class="btn-banner-action" onclick="showPage('master-siswa')">👨‍🎓 Data Siswa</button>
+            <button class="btn-banner-action" onclick="showPage('master-kelas')">🏫 Data Kelas</button>
+            <button class="btn-banner-action" onclick="showPage('master-mapel')">📖 Data Mapel</button>
+          </div>
         </div>
+
         <div class="grid-stats">
-          <div class="stat-card">
-            <span>Siswa Terdaftar</span>
+          <div class="stat-card" style="border-left: 4px solid var(--primary);">
+            <span>Total Siswa Terdaftar</span>
             <h2 id="admin-stat-siswa">0</h2>
           </div>
-          <div class="stat-card">
-            <span>Kelas Terdaftar</span>
+          <div class="stat-card" style="border-left: 4px solid var(--success);">
+            <span>Total Kelas Terdaftar</span>
             <h2 id="admin-stat-kelas">0</h2>
           </div>
         </div>

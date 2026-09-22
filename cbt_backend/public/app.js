@@ -33,13 +33,44 @@ function showLoginLayout() {
   document.getElementById("siswa-container").style.display = "none";
 }
 
+function quickFillLogin(u, p) {
+  document.getElementById("login-username").value = u;
+  document.getElementById("login-password").value = p;
+  showToast(`Autofill akun ${u.toUpperCase()} berhasil!`);
+}
+
+function toggleWebPasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === "password") {
+    input.type = "text";
+    btn.innerText = "🙈";
+  } else {
+    input.type = "password";
+    btn.innerText = "👁️";
+  }
+}
+
+function getGreetingTime() {
+  const hour = new Date().getHours();
+  if (hour < 11) return "Selamat Pagi";
+  if (hour < 15) return "Selamat Siang";
+  if (hour < 18) return "Selamat Sore";
+  return "Selamat Malam";
+}
+
 function handleLogin() {
   const usernameInput = document.getElementById("login-username").value.trim();
   const passwordInput = document.getElementById("login-password").value.trim();
+  const btn = document.getElementById("btn-login-submit");
 
   if (!usernameInput || !passwordInput) {
     showToast("Harap masukkan Username dan Password!");
     return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span>MEMPROSES...</span> ⌛`;
   }
 
   fetch('/api/auth/login', {
@@ -57,11 +88,17 @@ function handleLogin() {
     localStorage.setItem("cbt_user", JSON.stringify(currentUser));
     localStorage.setItem("cbt_profil", JSON.stringify(currentProfil));
     
-    showToast(`Login sukses!`);
+    showToast(`Login sukses! Selamat datang, ${currentProfil ? currentProfil.nama : currentUser.username}`);
     showAppLayout();
   })
   .catch(err => {
     showToast(err.message);
+  })
+  .finally(() => {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<span>MASUK KE SISTEM</span> ➔`;
+    }
   });
 }
 
@@ -447,6 +484,11 @@ function siswaGoHome() {
 // ==========================================
 
 function loadDashboardGuru() {
+  const greetingEl = document.getElementById("guru-greeting-title");
+  if (greetingEl) {
+    greetingEl.innerText = `${getGreetingTime()}, ${currentProfil ? currentProfil.nama : 'Guru'}! 👋`;
+  }
+
   fetch('/api/guru/ujian')
     .then(res => res.json())
     .then(list => {
