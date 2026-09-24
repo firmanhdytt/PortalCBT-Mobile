@@ -1,149 +1,167 @@
-const fs = require('fs');
-const path = require('path');
+require('dotenv').config();
+const { pool, testConnection } = require('./src/config/database');
 
-const DB_FILE = path.join(__dirname, 'cbt_db.json');
-
-// Struktur Database Awal (Seeding)
-const defaultData = {
-  users: [
-    { id: 1, username: 'admin', password: 'admin', role: 'admin' },
-    { id: 2, username: 'guru', password: 'guru', role: 'guru' },
-    { id: 3, username: 'siswa', password: 'siswa', role: 'siswa' },
-    { id: 4, username: 'siswa2', password: 'siswa2', role: 'siswa' }
-  ],
-  kelas: [
-    { id: 1, nama_kelas: 'XII RPL 1' },
-    { id: 2, nama_kelas: 'XII RPL 2' }
-  ],
-  mata_pelajaran: [
-    { id: 1, kode_mapel: 'INF-12', nama_mapel: 'Informatika' },
-    { id: 2, kode_mapel: 'MAT-12', nama_mapel: 'Matematika' }
-  ],
-  siswa: [
-    { id: 1, user_id: 3, nis: '2026001', nama: 'Ahmad Rifai', kelas_id: 1, nama_kelas: 'XII RPL 1' },
-    { id: 2, user_id: 4, nis: '2026002', nama: 'Siti Aminah', kelas_id: 1, nama_kelas: 'XII RPL 1' }
-  ],
-  guru: [
-    { id: 1, user_id: 2, nip: '1928392183', nama: 'Budi Santoso, M.Pd.' }
-  ],
-  bank_soal: [
-    { id: 1, mapel_id: 1, guru_id: 1, judul: 'Soal UAS Informatika Kelas XII' }
-  ],
-  soal: [
-    { id: 1, bank_soal_id: 1, jenis_soal: 'PG', teks_soal: 'Manakah di bawah ini yang merupakan bahasa pemrograman utama untuk pengembangan aplikasi Flutter?', gambar_url: '', bobot: 20 },
-    { id: 2, bank_soal_id: 1, jenis_soal: 'PG', teks_soal: 'Database lokal yang sering digunakan pada aplikasi mobile Flutter untuk menyimpan data secara luring (offline) adalah...', gambar_url: '', bobot: 20 },
-    { id: 3, bank_soal_id: 1, jenis_soal: 'PG', teks_soal: 'Widget dalam Flutter yang berfungsi untuk menata elemen secara vertikal dari atas ke bawah adalah...', gambar_url: '', bobot: 20 },
-    { id: 4, bank_soal_id: 1, jenis_soal: 'ESSAY', teks_soal: 'Jelaskan secara singkat apa keuntungan menggunakan Flutter untuk membuat aplikasi mobile!', gambar_url: '', bobot: 40 }
-  ],
-  pilihan_jawaban: [
-    { id: 1, soal_id: 1, teks_pilihan: 'Python', label: 'A', is_kunci: false },
-    { id: 2, soal_id: 1, teks_pilihan: 'Java', label: 'B', is_kunci: false },
-    { id: 3, soal_id: 1, teks_pilihan: 'Dart', label: 'C', is_kunci: true },
-    { id: 4, soal_id: 1, teks_pilihan: 'Swift', label: 'D', is_kunci: false },
-    { id: 5, soal_id: 1, teks_pilihan: 'Kotlin', label: 'E', is_kunci: false },
-    
-    { id: 6, soal_id: 2, teks_pilihan: 'MySQL', label: 'A', is_kunci: false },
-    { id: 7, soal_id: 2, teks_pilihan: 'MongoDB', label: 'B', is_kunci: false },
-    { id: 8, soal_id: 2, teks_pilihan: 'SQLite', label: 'C', is_kunci: true },
-    { id: 9, soal_id: 2, teks_pilihan: 'Redis', label: 'D', is_kunci: false },
-    { id: 10, soal_id: 2, teks_pilihan: 'Oracle', label: 'E', is_kunci: false },
-
-    { id: 11, soal_id: 3, teks_pilihan: 'Row', label: 'A', is_kunci: false },
-    { id: 12, soal_id: 3, teks_pilihan: 'Column', label: 'B', is_kunci: true },
-    { id: 13, soal_id: 3, teks_pilihan: 'Stack', label: 'C', is_kunci: false },
-    { id: 14, soal_id: 3, teks_pilihan: 'ListView', label: 'D', is_kunci: false },
-    { id: 15, soal_id: 3, teks_pilihan: 'Container', label: 'E', is_kunci: false }
-  ],
-  ujian: [
-    { id: 1, nama_ujian: 'Ujian Akhir Informatika', bank_soal_id: 1, kelas_id: 1, token: 'INF123', durasi_menit: 60, waktu_mulai: '2026-07-26 08:00', waktu_selesai: '2099-12-31 23:59', is_aktif: true }
-  ],
+/**
+ * In-Memory cache synchronized directly with MySQL.
+ * All mutations are persisted immediately into MySQL using prepared statements.
+ */
+let cache = {
+  users: [],
+  kelas: [],
+  mata_pelajaran: [],
+  guru: [],
+  siswa: [],
+  bank_soal: [],
+  soal: [],
+  pilihan_jawaban: [],
+  ujian: [],
   jawaban_peserta: [],
-  hasil_ujian: []
+  hasil_ujian: [],
+  exam_attempts: [],
+  exam_violations: [],
+  unlock_requests: [],
+  activity_logs: [],
+  certificates: [],
+  notifications: []
 };
 
-// Baca basis data dari file JSON
-function readDB() {
+let isInitialized = false;
+
+// Load all tables from MySQL into memory cache
+async function initFromMySQL() {
   try {
-    if (!fs.existsSync(DB_FILE)) {
-      writeDB(defaultData);
-      return defaultData;
+    await testConnection();
+    const tables = Object.keys(cache);
+    
+    for (const table of tables) {
+      try {
+        const [rows] = await pool.query(`SELECT * FROM \`${table}\``);
+        // Normalize boolean fields for backwards compatibility with existing UI
+        cache[table] = rows.map(r => {
+          const item = { ...r };
+          if ('is_kunci' in item) item.is_kunci = item.is_kunci === 1 || item.is_kunci === true;
+          if ('is_aktif' in item) item.is_aktif = item.is_aktif === 1 || item.is_aktif === true;
+          if ('is_ragu' in item) item.is_ragu = item.is_ragu === 1 || item.is_ragu === true;
+          return item;
+        });
+      } catch (err) {
+        // Table might be created later
+        cache[table] = [];
+      }
     }
-    const raw = fs.readFileSync(DB_FILE, 'utf8');
-    if (!raw.trim()) {
-      return defaultData;
-    }
-    return JSON.parse(raw);
+    isInitialized = true;
+    console.log('[DB-MySQL] Cache terinisialisasi dari MySQL database cbt_system.');
   } catch (error) {
-    console.error("Error reading database file:", error);
-    return defaultData;
+    console.error('[DB-MySQL] Gagal memuat data dari MySQL:', error.message);
   }
 }
 
-// Simpan data ke basis data JSON secara atomik
-function writeDB(data) {
-  const tmpFile = `${DB_FILE}.tmp`;
-  try {
-    fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf8');
-    fs.renameSync(tmpFile, DB_FILE);
-  } catch (error) {
-    console.error("Error writing database file:", error);
-    if (fs.existsSync(tmpFile)) {
-      try { fs.unlinkSync(tmpFile); } catch (e) {}
-    }
-  }
-}
+// Initial sync
+initFromMySQL();
 
-// Helper Query Database (Simulasi SQL sederhana)
 const db = {
+  pool,
+  initFromMySQL,
+
   getAll: (table) => {
-    const data = readDB();
-    return data[table] || [];
+    return cache[table] || [];
   },
-  
+
   getById: (table, id) => {
-    const data = readDB();
-    const rows = data[table] || [];
+    const rows = cache[table] || [];
     return rows.find(r => r.id === parseInt(id));
   },
-  
+
   insert: (table, record) => {
-    const data = readDB();
-    if (!data[table]) data[table] = [];
+    if (!cache[table]) cache[table] = [];
     
-    // Generate Auto-Increment ID
-    const maxId = data[table].reduce((max, r) => r.id > max ? r.id : max, 0);
-    record.id = maxId + 1;
-    
-    data[table].push(record);
-    writeDB(data);
+    // Auto-increment ID if not provided
+    if (!record.id) {
+      const maxId = cache[table].reduce((max, r) => r.id > max ? r.id : max, 0);
+      record.id = maxId + 1;
+    }
+
+    cache[table].push(record);
+
+    // Persist asynchronously to MySQL
+    (async () => {
+      try {
+        const keys = Object.keys(record);
+        const values = Object.values(record).map(v => {
+          if (typeof v === 'boolean') return v ? 1 : 0;
+          return v;
+        });
+        const placeholders = keys.map(() => '?').join(', ');
+        const sql = `INSERT INTO \`${table}\` (${keys.map(k => `\`${k}\``).join(', ')}) VALUES (${placeholders})
+                     ON DUPLICATE KEY UPDATE ${keys.map(k => `\`${k}\`=VALUES(\`${k}\`)`).join(', ')}`;
+        await pool.query(sql, values);
+      } catch (err) {
+        console.error(`[MySQL-INSERT-ERROR] Gagal menyimpan ke tabel ${table}:`, err.message);
+      }
+    })();
+
     return record;
   },
-  
+
   update: (table, id, newFields) => {
-    const data = readDB();
-    const rows = data[table] || [];
+    const rows = cache[table] || [];
     const index = rows.findIndex(r => r.id === parseInt(id));
     if (index !== -1) {
       rows[index] = { ...rows[index], ...newFields, id: parseInt(id) };
-      data[table] = rows;
-      writeDB(data);
+      cache[table] = rows;
+
+      // Persist asynchronously to MySQL
+      (async () => {
+        try {
+          const keys = Object.keys(newFields);
+          if (keys.length === 0) return;
+          const setClause = keys.map(k => `\`${k}\` = ?`).join(', ');
+          const values = Object.values(newFields).map(v => {
+            if (typeof v === 'boolean') return v ? 1 : 0;
+            return v;
+          });
+          const sql = `UPDATE \`${table}\` SET ${setClause} WHERE id = ?`;
+          await pool.query(sql, [...values, parseInt(id)]);
+        } catch (err) {
+          console.error(`[MySQL-UPDATE-ERROR] Gagal memperbarui tabel ${table} id ${id}:`, err.message);
+        }
+      })();
+
       return rows[index];
     }
     return null;
   },
-  
+
   delete: (table, id) => {
-    const data = readDB();
-    const rows = data[table] || [];
-    const filtered = rows.filter(r => r.id !== parseInt(id));
-    data[table] = filtered;
-    writeDB(data);
+    const rows = cache[table] || [];
+    cache[table] = rows.filter(r => r.id !== parseInt(id));
+
+    // Persist asynchronously to MySQL
+    (async () => {
+      try {
+        await pool.query(`DELETE FROM \`${table}\` WHERE id = ?`, [parseInt(id)]);
+      } catch (err) {
+        console.error(`[MySQL-DELETE-ERROR] Gagal menghapus dari tabel ${table} id ${id}:`, err.message);
+      }
+    })();
+
     return true;
   },
 
   query: (table, filterFn) => {
-    const data = readDB();
-    return (data[table] || []).filter(filterFn);
+    const rows = cache[table] || [];
+    return rows.filter(filterFn);
+  },
+
+  // Modern async queries for repositories
+  async rawQuery(sql, params = []) {
+    const [rows] = await pool.query(sql, params);
+    return rows;
+  },
+
+  async rawExecute(sql, params = []) {
+    const [result] = await pool.execute(sql, params);
+    return result;
   }
 };
 
