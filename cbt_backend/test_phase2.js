@@ -140,8 +140,13 @@ async function runTests() {
     const rWrongPass = await request('POST', '/api/login', { username: 'siswa', password: 'wrongpassword' });
     assert(rWrongPass.status === 401 && rWrongPass.data.success === false, 'POST /api/login (wrong password) -> 401 UNAUTHORIZED');
 
+    // Extract Bearer Tokens from login responses
+    const adminHeaders = { 'Authorization': `Bearer ${rAdminLogin.data.token}` };
+    const guruHeaders = { 'Authorization': `Bearer ${rGuruLogin.data.token}` };
+    const siswaHeaders = { 'Authorization': `Bearer ${rSiswaLogin.data.token}` };
+
     // Siswa: Get Active Exams (Flutter contract: List<dynamic>)
-    const rActiveExams = await request('GET', '/api/siswa/ujian/1');
+    const rActiveExams = await request('GET', '/api/siswa/ujian/1', null, siswaHeaders);
     assert(rActiveExams.status === 200 && Array.isArray(rActiveExams.data), 'GET /api/siswa/ujian/1 returns Array (Flutter contract preserved)');
 
     // Siswa: Token Verification
@@ -150,17 +155,17 @@ async function runTests() {
       const rVerify = await request('POST', '/api/siswa/ujian/verifikasi-token', {
         ujian_id: firstExam.id,
         token: firstExam.token
-      });
+      }, siswaHeaders);
       assert(rVerify.status === 200 && rVerify.data.ujian, `POST /api/siswa/ujian/verifikasi-token valid with token "${firstExam.token}"`);
 
       const rVerifyBad = await request('POST', '/api/siswa/ujian/verifikasi-token', {
         ujian_id: firstExam.id,
         token: 'WRONGTOKEN'
-      });
+      }, siswaHeaders);
       assert(rVerifyBad.status === 400 && rVerifyBad.data.success === false, 'POST /api/siswa/ujian/verifikasi-token invalid token returns error');
 
       // Siswa: Get Questions (Flutter contract: List<dynamic>, options stripped of is_kunci)
-      const rQuestions = await request('GET', `/api/siswa/ujian/soal/${firstExam.id}`);
+      const rQuestions = await request('GET', `/api/siswa/ujian/soal/${firstExam.id}`, null, siswaHeaders);
       assert(rQuestions.status === 200 && Array.isArray(rQuestions.data), `GET /api/siswa/ujian/soal/${firstExam.id} returns Array`);
       if (rQuestions.data.length > 0) {
         const sampleQ = rQuestions.data[0];
@@ -175,56 +180,57 @@ async function runTests() {
         jawaban_list: [
           { soal_id: 1, pilihan_jawaban_id: 1, teks_jawaban_essay: '', is_ragu: 0 }
         ]
-      });
+      }, siswaHeaders);
       assert(rSync.status === 200 && rSync.data.message.includes('disinkronkan'), 'POST /api/siswa/ujian/sync works');
 
       // Siswa: Submit exam
       const rSubmit = await request('POST', '/api/siswa/ujian/submit', {
         siswa_id: 1,
         ujian_id: firstExam.id
-      });
+      }, siswaHeaders);
       assert(rSubmit.status === 200 && rSubmit.data.hasil && rSubmit.data.hasil.nilai_akhir !== undefined, 'POST /api/siswa/ujian/submit calculates and returns score');
     }
 
     // Siswa: Riwayat Hasil (Flutter contract: List<dynamic>)
-    const rStudentResults = await request('GET', '/api/siswa/hasil/1');
+    const rStudentResults = await request('GET', '/api/siswa/hasil/1', null, siswaHeaders);
     assert(rStudentResults.status === 200 && Array.isArray(rStudentResults.data), 'GET /api/siswa/hasil/1 returns Array (Flutter contract preserved)');
 
     // Guru: Bank Soal
-    const rBankSoal = await request('GET', '/api/guru/bank-soal');
+    const rBankSoal = await request('GET', '/api/guru/bank-soal', null, guruHeaders);
     assert(rBankSoal.status === 200 && Array.isArray(rBankSoal.data), 'GET /api/guru/bank-soal returns Array');
 
     // Guru: Soal by Bank
-    const rSoal = await request('GET', '/api/guru/soal/1');
+    const rSoal = await request('GET', '/api/guru/soal/1', null, guruHeaders);
     assert(rSoal.status === 200 && Array.isArray(rSoal.data), 'GET /api/guru/soal/1 returns questions with choices');
 
     // Guru: Ujian list
-    const rUjianList = await request('GET', '/api/guru/ujian');
+    const rUjianList = await request('GET', '/api/guru/ujian', null, guruHeaders);
     assert(rUjianList.status === 200 && Array.isArray(rUjianList.data), 'GET /api/guru/ujian returns exams with statistics');
 
     // Guru: Monitoring
-    const rMon = await request('GET', '/api/guru/monitoring/1');
+    const rMon = await request('GET', '/api/guru/monitoring/1', null, guruHeaders);
     assert(rMon.status === 200 && rMon.data.siswa && Array.isArray(rMon.data.siswa), 'GET /api/guru/monitoring/1 returns live student monitoring');
 
     // Guru: Nilai Essay List
-    const rEssayList = await request('GET', '/api/guru/nilai-essay/list/1');
+    const rEssayList = await request('GET', '/api/guru/nilai-essay/list/1', null, guruHeaders);
     assert(rEssayList.status === 200 && Array.isArray(rEssayList.data), 'GET /api/guru/nilai-essay/list/1 returns essay questions');
 
     // Guru: Rekap Nilai
-    const rRekap = await request('GET', '/api/guru/rekap-nilai/1');
+    const rRekap = await request('GET', '/api/guru/rekap-nilai/1', null, guruHeaders);
     assert(rRekap.status === 200 && Array.isArray(rRekap.data), 'GET /api/guru/rekap-nilai/1 returns recap');
 
     // Admin: Siswa CRUD
-    const rAdminSiswa = await request('GET', '/api/admin/siswa');
+    const rAdminSiswa = await request('GET', '/api/admin/siswa', null, adminHeaders);
     assert(rAdminSiswa.status === 200 && Array.isArray(rAdminSiswa.data), 'GET /api/admin/siswa returns Array');
 
     // Admin: Kelas
-    const rAdminKelas = await request('GET', '/api/admin/kelas');
+    const rAdminKelas = await request('GET', '/api/admin/kelas', null, adminHeaders);
     assert(rAdminKelas.status === 200 && Array.isArray(rAdminKelas.data), 'GET /api/admin/kelas returns Array');
 
     // Admin: Mapel
-    const rAdminMapel = await request('GET', '/api/admin/mapel');
+    const rAdminMapel = await request('GET', '/api/admin/mapel', null, adminHeaders);
     assert(rAdminMapel.status === 200 && Array.isArray(rAdminMapel.data), 'GET /api/admin/mapel returns Array');
+
 
     // Web Static File Check
     const rWebIndex = await request('GET', '/');

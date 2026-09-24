@@ -41,9 +41,10 @@ class StudentExamController {
   async syncAnswers(req, res, next) {
     try {
       const { siswa_id, ujian_id, jawaban_list } = req.body;
-      await studentExamService.syncAnswers(siswa_id, ujian_id, jawaban_list);
+      const result = await studentExamService.syncAnswers(siswa_id, ujian_id, jawaban_list);
       return res.status(200).json({
-        message: 'Jawaban disinkronkan ke server!'
+        message: 'Jawaban disinkronkan ke server!',
+        ...result
       });
     } catch (err) {
       next(err);

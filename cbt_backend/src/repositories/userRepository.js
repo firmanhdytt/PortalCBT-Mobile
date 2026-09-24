@@ -31,6 +31,11 @@ class UserRepository {
     return await db.delete('users', id);
   }
 
+  async updatePassword(id, hashedPassword) {
+    return await db.update('users', id, { password: hashedPassword });
+  }
+
+
   async findAllStudents() {
     return await db.query(`
       SELECT s.id, s.user_id, s.nis, s.nama, s.kelas_id, k.nama_kelas, s.email, s.status, s.avatar, s.created_at

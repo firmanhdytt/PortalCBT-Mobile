@@ -1,3 +1,30 @@
+// Global JWT Fetch Interceptor
+const _originalFetch = window.fetch;
+window.fetch = function(url, options = {}) {
+  const token = localStorage.getItem("cbt_token");
+  options = options || {};
+  options.headers = options.headers || {};
+  if (token) {
+    if (options.headers instanceof Headers) {
+      if (!options.headers.has('Authorization')) {
+        options.headers.set('Authorization', 'Bearer ' + token);
+      }
+    } else if (Array.isArray(options.headers)) {
+      options.headers.push(['Authorization', 'Bearer ' + token]);
+    } else {
+      if (!options.headers['Authorization']) {
+        options.headers['Authorization'] = 'Bearer ' + token;
+      }
+    }
+  }
+  return _originalFetch(url, options).then(res => {
+    if (res.status === 401 && typeof url === 'string' && !url.includes('/login') && !url.includes('/register')) {
+      handleLogout();
+    }
+    return res;
+  });
+};
+
 let currentUser = null;
 let currentProfil = null;
 let editingSoalId = null;
@@ -16,9 +43,10 @@ let studentSecondsRemaining = 0;
 // KENDALI UTAMA LAYAR & TABS (SPA LOGIC)
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
+  const token = localStorage.getItem("cbt_token");
   const logged = localStorage.getItem("cbt_user");
   const prof = localStorage.getItem("cbt_profil");
-  if (logged) {
+  if (logged && token) {
     currentUser = JSON.parse(logged);
     currentProfil = prof ? JSON.parse(prof) : null;
     showAppLayout();
@@ -26,6 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
     showLoginLayout();
   }
 });
+
 
 function showLoginLayout() {
   document.getElementById("login-screen").style.display = "flex";
@@ -85,6 +114,8 @@ function handleLogin() {
   .then(res => {
     currentUser = res.user;
     currentProfil = res.profil;
+    if (res.token) localStorage.setItem("cbt_token", res.token);
+    if (res.refresh_token) localStorage.setItem("cbt_refresh_token", res.refresh_token);
     localStorage.setItem("cbt_user", JSON.stringify(currentUser));
     localStorage.setItem("cbt_profil", JSON.stringify(currentProfil));
     
@@ -103,10 +134,21 @@ function handleLogin() {
 }
 
 function handleLogout() {
+  const refreshToken = localStorage.getItem("cbt_refresh_token");
+  if (refreshToken) {
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    }).catch(() => {});
+  }
+  localStorage.removeItem("cbt_token");
+  localStorage.removeItem("cbt_refresh_token");
   localStorage.removeItem("cbt_user");
   localStorage.removeItem("cbt_profil");
   currentUser = null;
   currentProfil = null;
+
   
   // Matikan timer pengerjaan jika ada
   clearInterval(studentTimer);

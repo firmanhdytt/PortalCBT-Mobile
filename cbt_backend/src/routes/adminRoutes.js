@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const masterController = require('../controllers/masterController');
+const { authenticate, requireRole } = require('../middlewares/authMiddleware');
 const { validateBody, validateParams } = require('../middlewares/validator');
+
+// Proteksi seluruh rute admin: Wajib Login & Role Admin
+router.use(authenticate, requireRole(['admin']));
 
 // Siswa
 router.get('/siswa', (req, res, next) => masterController.getAllSiswa(req, res, next));

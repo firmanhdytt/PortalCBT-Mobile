@@ -18,23 +18,43 @@ class ExamSessionRepository {
 
   async saveOrUpdateAnswer(data) {
     const existing = await this.findSingleAnswer(data.siswa_id, data.ujian_id, data.soal_id);
+    const incomingWaktu = data.waktu_dijawab ? new Date(data.waktu_dijawab) : new Date();
+
     if (existing) {
-      return await db.update('jawaban_peserta', existing.id, {
+      // Conflict Resolution: Last-Write-Wins based on client timestamp
+      if (existing.waktu_dijawab) {
+        const existingWaktu = new Date(existing.waktu_dijawab);
+        if (existingWaktu.getTime() > incomingWaktu.getTime()) {
+          // Stale answer packet arrived after newer answer was already recorded.
+          return {
+            id: existing.id,
+            status: 'conflict_ignored',
+            existing_time: existingWaktu.toISOString(),
+            incoming_time: incomingWaktu.toISOString()
+          };
+        }
+      }
+
+      await db.update('jawaban_peserta', existing.id, {
         pilihan_jawaban_id: data.pilihan_jawaban_id || null,
         teks_jawaban_essay: data.teks_jawaban_essay || '',
         is_ragu: data.is_ragu ? 1 : 0,
-        waktu_dijawab: data.waktu_dijawab || new Date()
+        waktu_dijawab: incomingWaktu
       });
+
+      return { id: existing.id, status: 'updated' };
     } else {
-      return await db.insert('jawaban_peserta', {
+      const inserted = await db.insert('jawaban_peserta', {
         siswa_id: data.siswa_id,
         ujian_id: data.ujian_id,
         soal_id: data.soal_id,
         pilihan_jawaban_id: data.pilihan_jawaban_id || null,
         teks_jawaban_essay: data.teks_jawaban_essay || '',
         is_ragu: data.is_ragu ? 1 : 0,
-        waktu_dijawab: data.waktu_dijawab || new Date()
+        waktu_dijawab: incomingWaktu
       });
+
+      return { id: inserted.insertId, status: 'inserted' };
     }
   }
 

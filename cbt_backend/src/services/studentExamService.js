@@ -75,20 +75,34 @@ class StudentExamService {
       throw new ApiError('Data kiriman tidak lengkap!', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
-    const now = new Date();
+    let syncedCount = 0;
+    let conflictCount = 0;
+
     for (const j of jawabanList) {
-      await examSessionRepository.saveOrUpdateAnswer({
+      const clientWaktu = j.waktu_dijawab ? new Date(j.waktu_dijawab) : new Date();
+      const res = await examSessionRepository.saveOrUpdateAnswer({
         siswa_id: parseInt(siswaId),
         ujian_id: parseInt(ujianId),
         soal_id: parseInt(j.soal_id),
         pilihan_jawaban_id: j.pilihan_jawaban_id ? parseInt(j.pilihan_jawaban_id) : null,
         teks_jawaban_essay: j.teks_jawaban_essay || '',
         is_ragu: j.is_ragu ? 1 : 0,
-        waktu_dijawab: now
+        waktu_dijawab: clientWaktu
       });
+
+      if (res && res.status === 'conflict_ignored') {
+        conflictCount++;
+      } else {
+        syncedCount++;
+      }
     }
 
-    return true;
+    return {
+      success: true,
+      synced_count: syncedCount,
+      conflicts_ignored: conflictCount,
+      server_time: new Date().toISOString()
+    };
   }
 
   async submitExam(siswaId, ujianId) {

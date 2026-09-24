@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
-import 'views/login_page.dart';
+﻿import 'package:flutter/material.dart';
+import 'core/theme/app_theme.dart';
+import 'presentation/pages/login_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,11 +15,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'CBT Mobile Client',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E88E5)),
-        useMaterial3: true,
-        fontFamily: 'Inter',
-      ),
+      theme: AppTheme.lightTheme,
       home: const LoginPage(),
     );
   }

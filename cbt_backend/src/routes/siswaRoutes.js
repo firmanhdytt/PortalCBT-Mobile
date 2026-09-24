@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const studentExamController = require('../controllers/studentExamController');
+const { authenticate, requireRole } = require('../middlewares/authMiddleware');
 const { validateBody, validateParams } = require('../middlewares/validator');
+
+// Proteksi seluruh rute siswa: Wajib Login & Role Siswa atau Admin
+router.use(authenticate, requireRole(['siswa', 'admin']));
 
 // Daftar ujian aktif untuk kelas siswa
 router.get(

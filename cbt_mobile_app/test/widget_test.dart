@@ -1,15 +1,17 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cbt_mobile_app/main.dart';
 
 void main() {
-  testWidgets('CBT Mobile App smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-    // Verify that MaterialApp is mounted
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  testWidgets('CBT Mobile App smoke test', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 }
-

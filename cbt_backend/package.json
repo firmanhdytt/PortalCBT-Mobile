@@ -10,9 +10,11 @@
     "migrate:data": "node src/database/migrate_json_to_mysql.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.11.0"
   },
   "author": "Antigravity",

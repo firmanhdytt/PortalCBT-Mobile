@@ -2,7 +2,11 @@ const express = require('express');
 const router = express.Router();
 const questionController = require('../controllers/questionController');
 const examController = require('../controllers/examController');
+const { authenticate, requireRole } = require('../middlewares/authMiddleware');
 const { validateBody, validateParams } = require('../middlewares/validator');
+
+// Proteksi seluruh rute guru: Wajib Login & Role Guru atau Admin
+router.use(authenticate, requireRole(['guru', 'admin']));
 
 // --- BANK SOAL ---
 router.get('/bank-soal', (req, res, next) => questionController.getBankSoal(req, res, next));

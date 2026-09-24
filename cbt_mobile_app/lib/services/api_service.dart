@@ -1,3 +1,4 @@
+﻿import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +24,27 @@ class ApiService {
 
   static const Duration timeoutDuration = Duration(seconds: 10);
 
+  // Helper untuk membuat header HTTP dengan Bearer Token
+  static Future<Map<String, String>> getHeaders({bool isJson = true}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    final headers = <String, String>{};
+    if (isJson) {
+      headers['Content-Type'] = 'application/json';
+    }
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
+
+  // Clear session token
+  static Future<void> clearAuth() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+    await prefs.remove('refresh_token');
+  }
+
   // 1. Login
   static Future<Map<String, dynamic>?> login(String username, String password) async {
     final baseUrl = await getBaseUrl();
@@ -33,26 +55,36 @@ class ApiService {
         body: jsonEncode({'username': username, 'password': password}),
       ).timeout(timeoutDuration);
       if (res.statusCode == 200) {
-        return jsonDecode(res.body);
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final prefs = await SharedPreferences.getInstance();
+        if (data['token'] != null) {
+          await prefs.setString('auth_token', data['token']);
+        }
+        if (data['refresh_token'] != null) {
+          await prefs.setString('refresh_token', data['refresh_token']);
+        }
+        return data;
       }
     } catch (e) {
-      print("Error Login API: $e");
+      debugPrint("Error Login API: $e");
     }
     return null;
   }
+
 
   // 2. Load Daftar Ujian
   static Future<List<dynamic>> fetchUjianList(int kelasId, int siswaId) async {
     final baseUrl = await getBaseUrl();
     try {
+      final headers = await getHeaders(isJson: false);
       final res = await http
-          .get(Uri.parse('$baseUrl/siswa/ujian/$kelasId?siswa_id=$siswaId'))
+          .get(Uri.parse('$baseUrl/siswa/ujian/$kelasId?siswa_id=$siswaId'), headers: headers)
           .timeout(timeoutDuration);
       if (res.statusCode == 200) {
         return jsonDecode(res.body);
       }
     } catch (e) {
-      print("Error Fetch Ujian: $e");
+      debugPrint("Error Fetch Ujian: $e");
     }
     return [];
   }
@@ -61,16 +93,17 @@ class ApiService {
   static Future<Map<String, dynamic>?> verifyToken(int ujianId, String token) async {
     final baseUrl = await getBaseUrl();
     try {
+      final headers = await getHeaders(isJson: true);
       final res = await http.post(
         Uri.parse('$baseUrl/siswa/ujian/verifikasi-token'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode({'ujian_id': ujianId, 'token': token}),
       ).timeout(timeoutDuration);
       if (res.statusCode == 200) {
         return jsonDecode(res.body);
       }
     } catch (e) {
-      print("Error Verifikasi Token: $e");
+      debugPrint("Error Verifikasi Token: $e");
     }
     return null;
   }
@@ -79,14 +112,15 @@ class ApiService {
   static Future<List<dynamic>> fetchSoalList(int ujianId) async {
     final baseUrl = await getBaseUrl();
     try {
+      final headers = await getHeaders(isJson: false);
       final res = await http
-          .get(Uri.parse('$baseUrl/siswa/ujian/soal/$ujianId'))
+          .get(Uri.parse('$baseUrl/siswa/ujian/soal/$ujianId'), headers: headers)
           .timeout(timeoutDuration);
       if (res.statusCode == 200) {
         return jsonDecode(res.body);
       }
     } catch (e) {
-      print("Error Fetch Soal: $e");
+      debugPrint("Error Fetch Soal: $e");
     }
     return [];
   }
@@ -95,9 +129,10 @@ class ApiService {
   static Future<bool> syncJawaban(int siswaId, int ujianId, List<Map<String, dynamic>> jawabanList) async {
     final baseUrl = await getBaseUrl();
     try {
+      final headers = await getHeaders(isJson: true);
       final res = await http.post(
         Uri.parse('$baseUrl/siswa/ujian/sync'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode({
           'siswa_id': siswaId,
           'ujian_id': ujianId,
@@ -106,7 +141,7 @@ class ApiService {
       ).timeout(timeoutDuration);
       return res.statusCode == 200;
     } catch (e) {
-      print("Error Sync Jawaban: $e");
+      debugPrint("Error Sync Jawaban: $e");
     }
     return false;
   }
@@ -115,9 +150,10 @@ class ApiService {
   static Future<Map<String, dynamic>?> submitUjian(int siswaId, int ujianId) async {
     final baseUrl = await getBaseUrl();
     try {
+      final headers = await getHeaders(isJson: true);
       final res = await http.post(
         Uri.parse('$baseUrl/siswa/ujian/submit'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode({
           'siswa_id': siswaId,
           'ujian_id': ujianId,
@@ -127,8 +163,27 @@ class ApiService {
         return jsonDecode(res.body);
       }
     } catch (e) {
-      print("Error Submit Ujian: $e");
+      debugPrint("Error Submit Ujian: $e");
     }
     return null;
   }
+
+  // 7. Riwayat Hasil Ujian
+  static Future<List<dynamic>> fetchHasilList(int siswaId) async {
+    final baseUrl = await getBaseUrl();
+    try {
+      final headers = await getHeaders(isJson: false);
+      final res = await http
+          .get(Uri.parse('$baseUrl/siswa/hasil/$siswaId'), headers: headers)
+          .timeout(timeoutDuration);
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+    } catch (e) {
+      debugPrint("Error Fetch Hasil: $e");
+    }
+    return [];
+  }
 }
+
+
