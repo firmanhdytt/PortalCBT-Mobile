@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/network/api_client.dart';
@@ -13,6 +14,8 @@ import '../../data/repositories/exam_repository_impl.dart';
 import '../state/exam_controller.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/error_state_widget.dart';
+import '../widgets/anti_cheat_watermark.dart';
+import '../widgets/kiosk_lock_overlay.dart';
 import 'dashboard_page.dart';
 
 class ExamPage extends StatefulWidget {
@@ -34,7 +37,7 @@ class ExamPage extends StatefulWidget {
   State<ExamPage> createState() => _ExamPageState();
 }
 
-class _ExamPageState extends State<ExamPage> {
+class _ExamPageState extends State<ExamPage> with WidgetsBindingObserver {
   late Exam _currentExam;
   late Student _currentStudent;
   late ExamController _controller;
@@ -46,7 +49,67 @@ class _ExamPageState extends State<ExamPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _enableKioskMode();
     _initExamAndController();
+  }
+
+  void _enableKioskMode() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
+  void _disableKioskMode() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (_isInitialized && !_controller.isLocked && !_controller.isSubmitting) {
+        _handleLifecycleViolation(
+          'APP_SWITCH',
+          'Siswa keluar dari aplikasi ujian atau membuka aplikasi/notifikasi lain',
+        );
+      }
+    }
+  }
+
+  void _handleLifecycleViolation(String type, String desc) async {
+    await _controller.recordViolation(type, desc);
+    if (!mounted) return;
+
+    if (!_controller.isLocked) {
+      _showStrikeWarningDialog(_controller.violations, _controller.maxViolations);
+    }
+  }
+
+  void _showStrikeWarningDialog(int strikes, int maxStrikes) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            const SizedBox(width: 8),
+            Text('Peringatan ($strikes / $maxStrikes)', style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'Anda terdeteksi keluar dari aplikasi ujian!\n\nSisa kesempatan toleransi: ${maxStrikes - strikes} kali lagi sebelum sesi ujian TERKUNCI secara otomatis.',
+          style: const TextStyle(fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Saya Mengerti'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _initExamAndController() async {
@@ -63,6 +126,12 @@ class _ExamPageState extends State<ExamPage> {
             : int.tryParse(u['durasi_menit']?.toString() ?? '60') ?? 60,
         token: u['token']?.toString() ?? '',
         status: u['status']?.toString() ?? 'aktif',
+        allowBackNavigation: u['allow_back_navigation'] == 1 || u['allow_back_navigation'] == true || u['allow_back_navigation'] == null,
+        randomizeQuestions: u['randomize_questions'] == 1 || u['randomize_questions'] == true || u['randomize_questions'] == null,
+        randomizeOptions: u['randomize_options'] == 1 || u['randomize_options'] == true,
+        showResult: u['show_result'] == 1 || u['show_result'] == true || u['show_result'] == null,
+        maxViolations: u['max_violations'] is int ? u['max_violations'] : 3,
+        kkm: double.tryParse(u['kkm']?.toString() ?? '70.0') ?? 70.0,
       );
     }
 
@@ -132,6 +201,8 @@ class _ExamPageState extends State<ExamPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _disableKioskMode();
     _essayController.dispose();
     if (_isInitialized) {
       _controller.removeListener(_onControllerChanged);
@@ -260,12 +331,6 @@ class _ExamPageState extends State<ExamPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            const Text(
-              '*Skor akhir akan digabungkan setelah guru selesai memberikan penilaian untuk soal Essay.',
-              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
           ],
         ),
         actions: [
@@ -378,291 +443,349 @@ class _ExamPageState extends State<ExamPage> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) {
-          _showExitConfirmationDialog();
+        if (didPop) return;
+        if (_controller.isLocked) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ujian sedang terkunci. Harap hubungi pengawas.')),
+          );
+          return;
         }
+        _showExitConfirmationDialog();
       },
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: Text('Soal ${_controller.currentIndex + 1} dari ${_controller.totalQuestions}'),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          actions: [
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 15.0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade100,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.timer_outlined, size: 14, color: AppColors.danger),
-                      const SizedBox(width: 4),
-                      Text(
-                        _controller.formattedRemainingTime,
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.danger, fontSize: 14),
+      child: Stack(
+        children: [
+          Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
+              title: Text('Soal ${_controller.currentIndex + 1} dari ${_controller.totalQuestions}'),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              actions: [
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 15.0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade100,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.timer_outlined, size: 14, color: AppColors.danger),
+                          const SizedBox(width: 4),
+                          Text(
+                            _controller.formattedRemainingTime,
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.danger, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-        drawer: Drawer(
-          child: Column(
-            children: [
-              const DrawerHeader(
-                decoration: BoxDecoration(color: AppColors.primary),
-                child: Center(
-                  child: Text(
-                    'Navigasi Soal',
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildLegendItem(AppColors.primary, 'Aktif'),
-                    _buildLegendItem(AppColors.success, 'Dijawab'),
-                    _buildLegendItem(AppColors.doubtful, 'Ragu'),
-                    _buildLegendItem(Colors.grey.shade400, 'Belum'),
-                  ],
-                ),
-              ),
-              const Divider(),
-              Expanded(
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(15),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                  ),
-                  itemCount: _controller.totalQuestions,
-                  itemBuilder: (context, index) {
-                    final itemSoal = _controller.questions[index];
-                    final isCurrent = index == _controller.currentIndex;
-                    final status = _controller.getQuestionStatus(itemSoal.id);
-
-                    Color bgColor = Colors.white;
-                    Color fgColor = AppColors.textPrimary;
-
-                    if (isCurrent) {
-                      bgColor = AppColors.primary;
-                      fgColor = Colors.white;
-                    } else if (status == 'doubtful') {
-                      bgColor = AppColors.doubtful;
-                      fgColor = Colors.white;
-                    } else if (status == 'answered') {
-                      bgColor = AppColors.success;
-                      fgColor = Colors.white;
-                    }
-
-                    return ElevatedButton(
-                      onPressed: () {
-                        _controller.jumpToQuestion(index);
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: bgColor,
-                        foregroundColor: fgColor,
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          side: const BorderSide(color: AppColors.border),
-                        ),
-                      ),
-                      child: Text(
-                        '${index + 1}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        body: Column(
-          children: [
-            // Sub-status bar with live sync indicator
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              color: Colors.white,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            drawer: Drawer(
+              child: Column(
                 children: [
-                  Text('Tipe: ${q.jenisSoal}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
-                  _buildSyncStatusChip(),
-                  Text('Bobot: ${q.bobot}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                  const DrawerHeader(
+                    decoration: BoxDecoration(color: AppColors.primary),
+                    child: Center(
+                      child: Text(
+                        'Navigasi Soal',
+                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildLegendItem(AppColors.primary, 'Aktif'),
+                        _buildLegendItem(AppColors.success, 'Dijawab'),
+                        _buildLegendItem(AppColors.doubtful, 'Ragu'),
+                        _buildLegendItem(Colors.grey.shade400, 'Belum'),
+                      ],
+                    ),
+                  ),
+                  if (!_controller.allowBackNavigation)
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.amber.shade300),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.lock_clock, size: 16, color: Colors.orange),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Navigasi mundur dikunci untuk ujian ini.',
+                              style: TextStyle(fontSize: 11, color: Colors.brown, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const Divider(),
+                  Expanded(
+                    child: GridView.builder(
+                      padding: const EdgeInsets.all(15),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 4,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                      ),
+                      itemCount: _controller.totalQuestions,
+                      itemBuilder: (context, index) {
+                        final itemSoal = _controller.questions[index];
+                        final isCurrent = index == _controller.currentIndex;
+                        final status = _controller.getQuestionStatus(itemSoal.id);
+                        final isBlocked = !_controller.allowBackNavigation && index < _controller.currentIndex;
+
+                        Color bgColor = Colors.white;
+                        Color fgColor = AppColors.textPrimary;
+
+                        if (isBlocked) {
+                          bgColor = Colors.grey.shade200;
+                          fgColor = Colors.grey.shade500;
+                        } else if (isCurrent) {
+                          bgColor = AppColors.primary;
+                          fgColor = Colors.white;
+                        } else if (status == 'doubtful') {
+                          bgColor = AppColors.doubtful;
+                          fgColor = Colors.white;
+                        } else if (status == 'answered') {
+                          bgColor = AppColors.success;
+                          fgColor = Colors.white;
+                        }
+
+                        return ElevatedButton(
+                          onPressed: isBlocked
+                              ? null
+                              : () {
+                                  _controller.jumpToQuestion(index);
+                                  Navigator.pop(context);
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: bgColor,
+                            foregroundColor: fgColor,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              side: const BorderSide(color: AppColors.border),
+                            ),
+                          ),
+                          child: isBlocked
+                              ? const Icon(Icons.lock_outline, size: 16, color: Colors.grey)
+                              : Text(
+                                  '${index + 1}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                        );
+                      },
+                    ),
+                  ),
                 ],
               ),
             ),
+            body: Column(
+              children: [
+                // Sub-status bar with live sync indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  color: Colors.white,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Tipe: ${q.jenisSoal}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                      _buildSyncStatusChip(),
+                      Text('Bobot: ${q.bobot}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                    ],
+                  ),
+                ),
 
-            // Area Soal & Opsi
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Question Box
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Text(
-                        q.teksSoal,
-                        style: const TextStyle(fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Multiple Choice Options or Essay Input
-                    if (q.isMultipleChoice)
-                      Column(
-                        children: q.pilihan.map((opt) {
-                          final isSelected = selectedOptionId == opt.id;
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              color: isSelected ? AppColors.primaryLight : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isSelected ? AppColors.primary : AppColors.border,
-                                width: isSelected ? 2 : 1,
-                              ),
-                            ),
-                            child: ListTile(
-                              leading: Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: isSelected ? AppColors.primary : const Color(0xFFF1F5F9),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    opt.label,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : AppColors.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              title: Text(opt.teksPilihan),
-                              onTap: () {
-                                _controller.selectOption(q.id, opt.id);
-                              },
-                            ),
-                          );
-                        }).toList(),
-                      )
-                    else
-                      TextField(
-                        controller: _essayController,
-                        maxLines: 6,
-                        decoration: InputDecoration(
-                          hintText: 'Ketikkan jawaban Anda disini...',
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
+                // Area Soal & Opsi
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Question Box
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: AppColors.border),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Text(
+                            q.teksSoal,
+                            style: const TextStyle(fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
                           ),
                         ),
-                        onChanged: (val) {
-                          _controller.updateEssay(q.id, val);
-                        },
-                      ),
-                  ],
-                ),
-              ),
-            ),
+                        const SizedBox(height: 20),
 
-            // Bottom Navigation Controls
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ElevatedButton(
-                    onPressed: _controller.hasPrev ? () => _controller.prevQuestion() : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.textPrimary,
-                      side: const BorderSide(color: AppColors.border),
-                      elevation: 0,
+                        // Multiple Choice Options or Essay Input
+                        if (q.isMultipleChoice)
+                          Column(
+                            children: q.pilihan.map((opt) {
+                              final isSelected = selectedOptionId == opt.id;
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? AppColors.primaryLight : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isSelected ? AppColors.primary : AppColors.border,
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                ),
+                                child: ListTile(
+                                  leading: Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? AppColors.primary : const Color(0xFFF1F5F9),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        opt.label,
+                                        style: TextStyle(
+                                          color: isSelected ? Colors.white : AppColors.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  title: Text(opt.teksPilihan),
+                                  onTap: () {
+                                    _controller.selectOption(q.id, opt.id);
+                                  },
+                                ),
+                              );
+                            }).toList(),
+                          )
+                        else
+                          TextField(
+                            controller: _essayController,
+                            maxLines: 6,
+                            decoration: InputDecoration(
+                              hintText: 'Ketikkan jawaban Anda disini...',
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(color: AppColors.border),
+                              ),
+                            ),
+                            onChanged: (val) {
+                              _controller.updateEssay(q.id, val);
+                            },
+                          ),
+                      ],
                     ),
-                    child: const Text('Sebelum'),
                   ),
-                  Row(
+                ),
+
+                // Bottom Navigation Controls
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Checkbox(
-                        value: isRagu,
-                        activeColor: AppColors.doubtful,
-                        onChanged: (_) {
-                          _controller.toggleDoubt(q.id);
-                        },
+                      ElevatedButton(
+                        onPressed: _controller.hasPrev ? () => _controller.prevQuestion() : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppColors.textPrimary,
+                          side: const BorderSide(color: AppColors.border),
+                          elevation: 0,
+                        ),
+                        child: Text(_controller.allowBackNavigation ? 'Sebelum' : 'Terkunci'),
                       ),
-                      const Text(
-                        'Ragu-ragu',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.doubtful),
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: isRagu,
+                            activeColor: AppColors.doubtful,
+                            onChanged: (_) {
+                              _controller.toggleDoubt(q.id);
+                            },
+                          ),
+                          const Text(
+                            'Ragu-ragu',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.doubtful),
+                          ),
+                        ],
+                      ),
+                      ElevatedButton(
+                        onPressed: _controller.hasNext
+                            ? () => _controller.nextQuestion()
+                            : () => _confirmFinishExam(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                        ),
+                        child: Text(_controller.hasNext ? 'Lanjut' : 'Selesai'),
                       ),
                     ],
                   ),
-                  ElevatedButton(
-                    onPressed: _controller.hasNext
-                        ? () => _controller.nextQuestion()
-                        : () => _confirmFinishExam(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                    ),
-                    child: Text(_controller.hasNext ? 'Lanjut' : 'Selesai'),
-                  ),
-                ],
-              ),
-            ),
+                ),
 
-            // Open Question Grid Button
-            Builder(
-              builder: (ctx) => Container(
-                width: double.infinity,
-                color: const Color(0xFFF1F5F9),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: ElevatedButton.icon(
-                  onPressed: () => Scaffold.of(ctx).openDrawer(),
-                  icon: const Icon(Icons.grid_on),
-                  label: const Text('Buka Panel Nomor Soal'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.textPrimary,
-                    elevation: 0,
+                // Open Question Grid Button
+                Builder(
+                  builder: (ctx) => Container(
+                    width: double.infinity,
+                    color: const Color(0xFFF1F5F9),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    child: ElevatedButton.icon(
+                      onPressed: () => Scaffold.of(ctx).openDrawer(),
+                      icon: const Icon(Icons.grid_on),
+                      label: const Text('Buka Panel Nomor Soal'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppColors.textPrimary,
+                        elevation: 0,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          // 1. Dynamic Anti-Photo Watermark Overlay (Floating layer)
+          AntiCheatWatermark(
+            studentName: _currentStudent.nama,
+            studentNis: _currentStudent.nis,
+            examToken: _currentExam.token,
+          ),
+
+          // 2. Kiosk Lock Screen Overlay (Only shown when examination session is locked)
+          if (_controller.isLocked)
+            KioskLockOverlay(
+              strikes: _controller.violations,
+              maxViolations: _controller.maxViolations,
+              isRequestingUnlock: _controller.isRequestingUnlock,
+              pendingRequestStatus: _controller.pendingRequestStatus,
+              onRequestUnlock: (reason) => _controller.sendUnlockRequest(reason),
+              onCheckStatus: () => _controller.checkUnlockStatus(),
+              onForceExit: () => _exitExam(keepSession: true),
+            ),
+        ],
       ),
     );
   }

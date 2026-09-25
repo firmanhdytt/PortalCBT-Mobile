@@ -34,6 +34,14 @@ class ExamController extends ChangeNotifier {
   Timer? _countdownTimer;
   bool _isSubmitting = false;
 
+  // Anti-Cheat & Proctoring State
+  int _violations = 0;
+  bool _isLocked = false;
+  String? _lockReason;
+  bool _isRequestingUnlock = false;
+  String? _pendingRequestStatus; // null, 'PENDING', 'APPROVED', 'REJECTED'
+  Timer? _unlockPollingTimer;
+
   List<Question> get questions => _questions;
   int get currentIndex => _currentIndex;
   Question? get currentQuestion => _questions.isNotEmpty && _currentIndex < _questions.length
@@ -45,8 +53,17 @@ class ExamController extends ChangeNotifier {
   int get remainingSeconds => _remainingSeconds;
   int get totalQuestions => _questions.length;
   bool get hasNext => _currentIndex < _questions.length - 1;
-  bool get hasPrev => _currentIndex > 0;
+  bool get hasPrev => exam.allowBackNavigation && _currentIndex > 0;
+  bool get allowBackNavigation => exam.allowBackNavigation;
   SyncState get syncState => _syncEngine.currentState;
+
+  // Anti-Cheat Getters
+  int get violations => _violations;
+  int get maxViolations => exam.maxViolations;
+  bool get isLocked => _isLocked;
+  String? get lockReason => _lockReason;
+  bool get isRequestingUnlock => _isRequestingUnlock;
+  String? get pendingRequestStatus => _pendingRequestStatus;
 
   String get formattedRemainingTime {
     final m = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
@@ -85,7 +102,13 @@ class ExamController extends ChangeNotifier {
       _syncEngine.stateNotifier.addListener(_onSyncStateChanged);
       _syncEngine.start(siswaId: siswaId, ujianId: exam.id);
 
-      _startTimer();
+      // 5. Initial unlock status check
+      await _checkInitialUnlockStatus();
+
+      if (!_isLocked) {
+        _startTimer();
+      }
+
       _isLoading = false;
       notifyListeners();
 
@@ -98,6 +121,22 @@ class ExamController extends ChangeNotifier {
     }
   }
 
+  Future<void> _checkInitialUnlockStatus() async {
+    try {
+      final res = await _repo.checkUnlockStatus(ujianId: exam.id, siswaId: siswaId);
+      if (res['is_locked'] == true) {
+        _isLocked = true;
+        _violations = res['strikes'] as int? ?? exam.maxViolations;
+        if (res['latest_request'] != null) {
+          _pendingRequestStatus = res['latest_request']['status']?.toString();
+        }
+        _startPollingUnlockStatus();
+      }
+    } catch (_) {
+      // Offline fallback: keep local state
+    }
+  }
+
   void _onSyncStateChanged() {
     notifyListeners();
   }
@@ -105,6 +144,8 @@ class ExamController extends ChangeNotifier {
   void _startTimer() {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_isLocked) return; // Freeze timer if locked
+
       if (_remainingSeconds > 0) {
         _remainingSeconds--;
         // Save checkpoint every 10 seconds
@@ -119,9 +160,102 @@ class ExamController extends ChangeNotifier {
     });
   }
 
+  // --- PROCTORING & ANTI-CHEAT METHODS ---
+  Future<Map<String, dynamic>> recordViolation(String violationType, String description) async {
+    if (_isLocked) return {'is_locked': true};
+
+    try {
+      final res = await _repo.reportViolation(
+        siswaId: siswaId,
+        ujianId: exam.id,
+        violationType: violationType,
+        description: description,
+      );
+
+      _violations = (res['strike_number'] as int?) ?? (_violations + 1);
+      final locked = res['is_locked'] == true || _violations >= exam.maxViolations;
+
+      if (locked) {
+        _isLocked = true;
+        _countdownTimer?.cancel();
+        _startPollingUnlockStatus();
+      }
+
+      notifyListeners();
+      return res;
+    } catch (_) {
+      // Local fallback strike count
+      _violations++;
+      if (_violations >= exam.maxViolations) {
+        _isLocked = true;
+        _countdownTimer?.cancel();
+        _startPollingUnlockStatus();
+      }
+      notifyListeners();
+      return {'strike_number': _violations, 'is_locked': _isLocked};
+    }
+  }
+
+  Future<bool> sendUnlockRequest(String reason) async {
+    _isRequestingUnlock = true;
+    notifyListeners();
+
+    try {
+      final res = await _repo.requestUnlock(
+        siswaId: siswaId,
+        ujianId: exam.id,
+        reason: reason,
+      );
+
+      _pendingRequestStatus = 'PENDING';
+      _isRequestingUnlock = false;
+      _startPollingUnlockStatus();
+      notifyListeners();
+      return res.isNotEmpty;
+    } catch (e) {
+      _isRequestingUnlock = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> checkUnlockStatus() async {
+    try {
+      final res = await _repo.checkUnlockStatus(ujianId: exam.id, siswaId: siswaId);
+      final locked = res['is_locked'] == true || res['attempt_status'] == 'LOCKED';
+
+      if (!locked) {
+        // Exam has been unlocked by teacher!
+        _isLocked = false;
+        _pendingRequestStatus = null;
+        _unlockPollingTimer?.cancel();
+        _startTimer();
+        notifyListeners();
+        return true;
+      } else {
+        if (res['latest_request'] != null) {
+          _pendingRequestStatus = res['latest_request']['status']?.toString();
+        }
+        notifyListeners();
+        return false;
+      }
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _startPollingUnlockStatus() {
+    _unlockPollingTimer?.cancel();
+    _unlockPollingTimer = Timer.periodic(const Duration(seconds: 4), (_) async {
+      await checkUnlockStatus();
+    });
+  }
+
   Answer? getAnswerForQuestion(int soalId) => _answers[soalId];
 
   Future<void> selectOption(int soalId, int optionId) async {
+    if (_isLocked) return;
+
     final current = _answers[soalId];
     final updated = Answer(
       id: current?.id,
@@ -144,6 +278,8 @@ class ExamController extends ChangeNotifier {
   }
 
   Future<void> updateEssay(int soalId, String text) async {
+    if (_isLocked) return;
+
     final current = _answers[soalId];
     final updated = Answer(
       id: current?.id,
@@ -166,6 +302,8 @@ class ExamController extends ChangeNotifier {
   }
 
   Future<void> toggleDoubt(int soalId) async {
+    if (_isLocked) return;
+
     final current = _answers[soalId];
     final bool newRagu = !(current?.isRagu ?? false);
 
@@ -191,6 +329,10 @@ class ExamController extends ChangeNotifier {
 
   void jumpToQuestion(int index) {
     if (index >= 0 && index < _questions.length) {
+      // Enforce navigation restriction
+      if (!exam.allowBackNavigation && index < _currentIndex) {
+        return; // Navigasi mundur tidak diizinkan
+      }
       _currentIndex = index;
       notifyListeners();
     }
@@ -204,7 +346,7 @@ class ExamController extends ChangeNotifier {
   }
 
   void prevQuestion() {
-    if (hasPrev) {
+    if (hasPrev && exam.allowBackNavigation) {
       _currentIndex--;
       notifyListeners();
     }
@@ -219,11 +361,14 @@ class ExamController extends ChangeNotifier {
   }
 
   Future<ExamResult?> submitExam() async {
+    if (_isLocked) return null;
+
     _isSubmitting = true;
     _errorMessage = null;
     notifyListeners();
 
     _countdownTimer?.cancel();
+    _unlockPollingTimer?.cancel();
 
     try {
       // 1. Flush any pending answers first
@@ -250,6 +395,7 @@ class ExamController extends ChangeNotifier {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _unlockPollingTimer?.cancel();
     _syncEngine.stateNotifier.removeListener(_onSyncStateChanged);
     _syncEngine.stop();
     super.dispose();

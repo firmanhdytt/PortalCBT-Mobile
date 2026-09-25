@@ -167,6 +167,7 @@ async function migrate() {
         allow_back_navigation TINYINT(1) NOT NULL DEFAULT 1,
         show_result TINYINT(1) NOT NULL DEFAULT 1,
         max_attempt INT NOT NULL DEFAULT 1,
+        max_violations INT NOT NULL DEFAULT 3,
         status ENUM('DRAFT', 'SCHEDULED', 'ONGOING', 'FINISHED') NOT NULL DEFAULT 'ONGOING',
         is_aktif TINYINT(1) NOT NULL DEFAULT 1,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

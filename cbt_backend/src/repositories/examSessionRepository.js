@@ -147,11 +147,26 @@ class ExamSessionRepository {
         [s.id, ujianId]
       );
       const result = await this.findResultByStudentAndExam(s.id, ujianId);
+      const attempt = await db.getOne(
+        'SELECT * FROM exam_attempts WHERE siswa_id = ? AND ujian_id = ? ORDER BY id DESC LIMIT 1',
+        [s.id, ujianId]
+      );
+      const strikesRow = await db.query(
+        'SELECT COUNT(*) as cnt FROM exam_violations WHERE siswa_id = ? AND ujian_id = ?',
+        [s.id, ujianId]
+      );
+      const strikes = strikesRow && strikesRow[0] ? strikesRow[0].cnt : 0;
+      const pendingUnlock = await db.getOne(
+        'SELECT * FROM unlock_requests WHERE siswa_id = ? AND ujian_id = ? AND status = "PENDING" ORDER BY id DESC LIMIT 1',
+        [s.id, ujianId]
+      );
 
       let status = 'Belum Mulai';
       if (result) {
         status = 'Selesai';
-      } else if (answers.length > 0) {
+      } else if (attempt && attempt.status === 'LOCKED') {
+        status = 'Terkunci (Anti-Cheat)';
+      } else if (answers.length > 0 || (attempt && attempt.status === 'IN_PROGRESS')) {
         status = 'Sedang Mengerjakan';
       }
 
@@ -161,6 +176,10 @@ class ExamSessionRepository {
         nama: s.nama,
         soal_terjawab: answers.length,
         status,
+        strikes,
+        is_locked: attempt ? attempt.status === 'LOCKED' : false,
+        pending_unlock_id: pendingUnlock ? pendingUnlock.id : null,
+        pending_unlock_reason: pendingUnlock ? pendingUnlock.reason : null,
         waktu_update: answers.length > 0 ? answers[answers.length - 1].waktu_dijawab : '-'
       });
     }

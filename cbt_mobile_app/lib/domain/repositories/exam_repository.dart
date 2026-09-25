@@ -14,4 +14,19 @@ abstract class ExamRepository {
   Future<ExamResult> submitExam(int siswaId, int ujianId);
   Future<List<ExamResult>> getStudentResults(int siswaId);
   Future<Map<int, String>> getAnswerStatusMap(int ujianId);
+  Future<Map<String, dynamic>> reportViolation({
+    required int siswaId,
+    required int ujianId,
+    required String violationType,
+    String? description,
+  });
+  Future<Map<String, dynamic>> requestUnlock({
+    required int siswaId,
+    required int ujianId,
+    required String reason,
+  });
+  Future<Map<String, dynamic>> checkUnlockStatus({
+    required int ujianId,
+    required int siswaId,
+  });
 }

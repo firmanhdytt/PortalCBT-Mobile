@@ -30,7 +30,8 @@ class StudentExamController {
   async getExamQuestions(req, res, next) {
     try {
       const ujianId = req.params.ujianId;
-      const questions = await studentExamService.getExamQuestions(ujianId);
+      const siswaId = req.query.siswa_id || req.query.siswaId || req.user?.id;
+      const questions = await studentExamService.getExamQuestions(ujianId, siswaId);
       // Contract: Flutter expects raw List<dynamic>
       return ApiResponse.raw(res, questions);
     } catch (err) {

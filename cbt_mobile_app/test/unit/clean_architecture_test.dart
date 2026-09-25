@@ -1,8 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
-import 'package:cbt_mobile_app/domain/entities/student.dart';
-import 'package:cbt_mobile_app/domain/entities/exam.dart';
-import 'package:cbt_mobile_app/domain/entities/question.dart';
-import 'package:cbt_mobile_app/domain/entities/option.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:cbt_mobile_app/domain/entities/answer.dart';
 import 'package:cbt_mobile_app/data/models/student_model.dart';
 import 'package:cbt_mobile_app/data/models/exam_model.dart';

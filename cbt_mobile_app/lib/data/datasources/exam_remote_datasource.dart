@@ -72,4 +72,55 @@ class ExamRemoteDataSource {
     }
     return [];
   }
+
+  Future<Map<String, dynamic>> reportViolation({
+    required int siswaId,
+    required int ujianId,
+    required String violationType,
+    String? description,
+  }) async {
+    final res = await _client.post(
+      ApiEndpoints.reportViolation,
+      data: {
+        'siswa_id': siswaId,
+        'ujian_id': ujianId,
+        'violation_type': violationType,
+        'description': description ?? 'Pelanggaran anti-cheat di aplikasi mobile',
+      },
+    );
+    if (res is Map<String, dynamic>) {
+      return res;
+    }
+    return {};
+  }
+
+  Future<Map<String, dynamic>> requestUnlock({
+    required int siswaId,
+    required int ujianId,
+    required String reason,
+  }) async {
+    final res = await _client.post(
+      ApiEndpoints.requestUnlock,
+      data: {
+        'siswa_id': siswaId,
+        'ujian_id': ujianId,
+        'reason': reason,
+      },
+    );
+    if (res is Map<String, dynamic>) {
+      return res;
+    }
+    return {};
+  }
+
+  Future<Map<String, dynamic>> checkUnlockStatus({
+    required int ujianId,
+    required int siswaId,
+  }) async {
+    final res = await _client.get(ApiEndpoints.unlockStatus(ujianId, siswaId));
+    if (res is Map<String, dynamic>) {
+      return res;
+    }
+    return {};
+  }
 }

@@ -15,4 +15,10 @@ class ApiEndpoints {
   static const String syncAnswers = '/siswa/ujian/sync';
   static const String submitExam = '/siswa/ujian/submit';
   static String studentResults(int siswaId) => '/siswa/hasil/$siswaId';
+
+  // Proctoring & Anti-Cheat
+  static const String reportViolation = '/siswa/ujian/violation';
+  static const String requestUnlock = '/siswa/ujian/unlock-request';
+  static String unlockStatus(int ujianId, int siswaId) =>
+      '/siswa/ujian/unlock-status/$ujianId/$siswaId';
 }

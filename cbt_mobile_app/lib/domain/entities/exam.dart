@@ -8,6 +8,12 @@ class Exam {
   final int? kelasId;
   final String? namaKelas;
   final bool isAktif;
+  final bool allowBackNavigation;
+  final bool randomizeQuestions;
+  final bool randomizeOptions;
+  final bool showResult;
+  final int maxViolations;
+  final double kkm;
 
   const Exam({
     required this.id,
@@ -19,6 +25,12 @@ class Exam {
     this.kelasId,
     this.namaKelas,
     this.isAktif = true,
+    this.allowBackNavigation = true,
+    this.randomizeQuestions = true,
+    this.randomizeOptions = false,
+    this.showResult = true,
+    this.maxViolations = 3,
+    this.kkm = 70.0,
   });
 
   @override

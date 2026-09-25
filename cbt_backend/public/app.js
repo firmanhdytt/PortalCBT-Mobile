@@ -966,13 +966,38 @@ function loadMonitoringData(id) {
         let badgeClass = 'badge-secondary';
         if (s.status === 'Selesai') badgeClass = 'badge-success';
         if (s.status === 'Sedang Mengerjakan') badgeClass = 'badge-warning';
+        if (s.is_locked || s.status === 'Terkunci (Anti-Cheat)') badgeClass = 'badge-danger';
+
+        const strikeBadge = (s.strikes && s.strikes > 0)
+          ? `<span style="display:inline-block; margin-top:4px; padding:2px 6px; font-size:10px; border-radius:4px; background:#fee2e2; color:#b91c1c; font-weight:bold;">🚨 ${s.strikes} Pelanggaran</span>`
+          : '';
+
+        let unlockActionBtn = '';
+        if (s.pending_unlock_id) {
+          unlockActionBtn = `
+            <div style="margin-top:8px; padding:6px; background:#fef3c7; border-radius:6px; font-size:11px;">
+              <strong>Permintaan Buka Kunci:</strong><br>
+              <em>"${s.pending_unlock_reason || 'Meminta pembukaan kunci ujian'}"</em>
+              <div style="margin-top:4px;">
+                <button class="btn btn-warning" onclick="handleTeacherUnlock(${s.pending_unlock_id}, ${id})" style="padding:3px 8px; font-size:11px; cursor:pointer;">🔓 Setujui & Buka</button>
+              </div>
+            </div>
+          `;
+        } else if (s.is_locked) {
+          unlockActionBtn = `
+            <div style="margin-top:8px;">
+              <button class="btn btn-secondary" onclick="handleTeacherManualUnlock(${id}, ${s.id})" style="padding:3px 8px; font-size:11px; cursor:pointer;">🔓 Buka Kunci Manual</button>
+            </div>
+          `;
+        }
 
         container.innerHTML += `
-          <div class="student-monitor-card">
+          <div class="student-monitor-card" style="${s.is_locked ? 'border: 2px solid #ef4444;' : ''}">
             <div class="monitor-student-header">
               <div>
                 <h4>${s.nama}</h4>
                 <span>NIS: ${s.nis}</span>
+                ${strikeBadge}
               </div>
               <span class="badge ${badgeClass}">${s.status}</span>
             </div>
@@ -984,11 +1009,40 @@ function loadMonitoringData(id) {
               <div class="progress-bar-container">
                 <div class="progress-bar-fill" style="width: ${pct}%"></div>
               </div>
+              ${unlockActionBtn}
             </div>
           </div>
         `;
       });
     });
+}
+
+function handleTeacherUnlock(requestId, ujianId) {
+  fetch(`/api/guru/proctoring/unlock/${requestId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'APPROVE' })
+  })
+  .then(res => res.json())
+  .then(res => {
+    showToast(res.message || 'Ujian berhasil dibuka kuncinya!');
+    loadMonitoringData(ujianId);
+  })
+  .catch(err => showToast(err.message));
+}
+
+function handleTeacherManualUnlock(ujianId, siswaId) {
+  fetch('/api/guru/proctoring/reset-violations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ujian_id: ujianId, siswa_id: siswaId })
+  })
+  .then(res => res.json())
+  .then(res => {
+    showToast(res.message || 'Status ujian dibuka kembali!');
+    loadMonitoringData(ujianId);
+  })
+  .catch(err => showToast(err.message));
 }
 
 function loadGradingPage() {

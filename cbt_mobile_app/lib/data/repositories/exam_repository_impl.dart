@@ -99,4 +99,43 @@ class ExamRepositoryImpl implements ExamRepository {
   Future<Map<int, String>> getAnswerStatusMap(int ujianId) async {
     return await _local.getAnswerStatusMap(ujianId);
   }
+
+  @override
+  Future<Map<String, dynamic>> reportViolation({
+    required int siswaId,
+    required int ujianId,
+    required String violationType,
+    String? description,
+  }) async {
+    return await _remote.reportViolation(
+      siswaId: siswaId,
+      ujianId: ujianId,
+      violationType: violationType,
+      description: description,
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> requestUnlock({
+    required int siswaId,
+    required int ujianId,
+    required String reason,
+  }) async {
+    return await _remote.requestUnlock(
+      siswaId: siswaId,
+      ujianId: ujianId,
+      reason: reason,
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> checkUnlockStatus({
+    required int ujianId,
+    required int siswaId,
+  }) async {
+    return await _remote.checkUnlockStatus(
+      ujianId: ujianId,
+      siswaId: siswaId,
+    );
+  }
 }

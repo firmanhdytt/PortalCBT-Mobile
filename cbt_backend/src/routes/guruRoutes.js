@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const questionController = require('../controllers/questionController');
 const examController = require('../controllers/examController');
+const proctoringController = require('../controllers/proctoringController');
 const { authenticate, requireRole } = require('../middlewares/authMiddleware');
 const { validateBody, validateParams } = require('../middlewares/validator');
 
@@ -107,6 +108,28 @@ router.get(
   '/rekap-nilai/:ujianId',
   validateParams({ ujianId: { required: true } }),
   (req, res, next) => examController.getExamRecap(req, res, next)
+);
+
+// --- PROCTORING & ANTI-CHEAT MONITORING ---
+router.get(
+  '/proctoring/:ujianId',
+  validateParams({ ujianId: { required: true } }),
+  (req, res, next) => proctoringController.getProctoringMonitoring(req, res, next)
+);
+
+router.post(
+  '/proctoring/unlock/:requestId',
+  validateParams({ requestId: { required: true } }),
+  (req, res, next) => proctoringController.reviewUnlockRequest(req, res, next)
+);
+
+router.post(
+  '/proctoring/reset-violations',
+  validateBody({
+    ujian_id: { required: true },
+    siswa_id: { required: true }
+  }),
+  (req, res, next) => proctoringController.manualUnlock(req, res, next)
 );
 
 module.exports = router;
