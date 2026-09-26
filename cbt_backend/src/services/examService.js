@@ -1,7 +1,7 @@
 const examRepository = require('../repositories/examRepository');
 const examSessionRepository = require('../repositories/examSessionRepository');
 const questionRepository = require('../repositories/questionRepository');
-const db = require('../database/db');
+const analyticsService = require('./analyticsService');
 const { ApiError } = require('../utils/response');
 const { ERROR_CODES } = require('../utils/errorCodes');
 
@@ -10,7 +10,7 @@ class ExamService {
     return await examRepository.findAllExamsWithStats();
   }
 
-  async getExamById(id) {
+  async getExamDetail(id) {
     const exam = await examRepository.findExamById(id);
     if (!exam) {
       throw new ApiError('Ujian tidak ditemukan!', 404, ERROR_CODES.RESOURCE_NOT_FOUND);
@@ -18,30 +18,33 @@ class ExamService {
     return exam;
   }
 
-  async createExam({ nama_ujian, bank_soal_id, kelas_id, token, durasi_menit }) {
-    if (!nama_ujian || !bank_soal_id || !kelas_id) {
-      throw new ApiError('Data ujian tidak lengkap!', 400, ERROR_CODES.VALIDATION_ERROR);
+  async createExam(data) {
+    if (!data.nama_ujian || !data.bank_soal_id || !data.kelas_id) {
+      throw new ApiError('Semua field wajib diisi!', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
-    const generatedToken = token && token.trim() 
-      ? token.trim().toUpperCase() 
-      : Math.random().toString(36).substring(2, 8).toUpperCase();
+    const payload = {
+      nama_ujian: data.nama_ujian,
+      deskripsi: data.deskripsi || null,
+      bank_soal_id: parseInt(data.bank_soal_id),
+      kelas_id: parseInt(data.kelas_id),
+      token: (data.token || Math.random().toString(36).substring(2, 8)).toUpperCase(),
+      durasi_menit: data.durasi_menit ? parseInt(data.durasi_menit) : 60,
+      waktu_mulai: data.waktu_mulai || null,
+      waktu_selesai: data.waktu_selesai || null,
+      kkm: data.kkm ? parseFloat(data.kkm) : 70.00,
+      randomize_questions: data.randomize_questions !== undefined ? (data.randomize_questions ? 1 : 0) : 1,
+      randomize_options: data.randomize_options !== undefined ? (data.randomize_options ? 1 : 0) : 0,
+      allow_back_navigation: data.allow_back_navigation !== undefined ? (data.allow_back_navigation ? 1 : 0) : 1,
+      show_result: data.show_result !== undefined ? (data.show_result ? 1 : 0) : 1,
+      max_attempt: data.max_attempt ? parseInt(data.max_attempt) : 1,
+      max_violations: data.max_violations ? parseInt(data.max_violations) : 3,
+      status: data.status || 'ONGOING',
+      is_aktif: data.is_aktif !== undefined ? (data.is_aktif ? 1 : 0) : 1
+    };
 
-    const now = new Date();
-    const waktuSelesai = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-
-    const newId = await examRepository.createExam({
-      nama_ujian: nama_ujian.trim(),
-      bank_soal_id: parseInt(bank_soal_id),
-      kelas_id: parseInt(kelas_id),
-      token: generatedToken,
-      durasi_menit: parseInt(durasi_menit || 60),
-      waktu_mulai: now,
-      waktu_selesai: waktuSelesai,
-      is_aktif: 1
-    });
-
-    return await examRepository.findExamById(newId);
+    const inserted = await examRepository.createExam(payload);
+    return await examRepository.findExamById(inserted.id);
   }
 
   async updateExam(id, data) {
@@ -102,7 +105,18 @@ class ExamService {
     return await examSessionRepository.findEssayAnswersByExam(ujianId);
   }
 
-  async gradeEssay({ jawaban_id, nilai }) {
+  async gradeEssay(arg1, arg2, arg3) {
+    let jawaban_id, nilai, catatan_guru;
+    if (typeof arg1 === 'object' && arg1 !== null) {
+      jawaban_id = arg1.jawaban_id;
+      nilai = arg1.nilai;
+      catatan_guru = arg1.catatan_guru;
+    } else {
+      jawaban_id = arg1;
+      nilai = arg2;
+      catatan_guru = arg3;
+    }
+
     if (!jawaban_id) {
       throw new ApiError('Jawaban ID wajib diisi!', 400, ERROR_CODES.VALIDATION_ERROR);
     }
@@ -112,45 +126,86 @@ class ExamService {
       throw new ApiError('Jawaban tidak ditemukan!', 404, ERROR_CODES.RESOURCE_NOT_FOUND);
     }
 
+    const question = await questionRepository.findQuestionById(jp.soal_id);
+    if (!question || question.jenis_soal !== 'ESSAY') {
+      throw new ApiError('Soal ini bukan tipe essay!', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    const maxScore = parseFloat(question.bobot || 10.0);
     const numericScore = parseFloat(nilai || 0);
-    await examSessionRepository.updateAnswer(jp.id, { nilai_manual: numericScore });
+
+    if (isNaN(numericScore) || numericScore < 0 || numericScore > maxScore) {
+      throw new ApiError(`Nilai harus berupa angka valid antara 0 dan ${maxScore}!`, 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    await examSessionRepository.updateAnswer(jp.id, {
+      nilai_manual: numericScore,
+      catatan_guru: catatan_guru !== undefined ? catatan_guru : jp.catatan_guru
+    });
 
     // Recalculate student final score
     const existingHasil = await examSessionRepository.findResultByStudentAndExam(jp.siswa_id, jp.ujian_id);
+    let resultPayload = null;
+
     if (existingHasil) {
       const ujian = await examRepository.findExamById(jp.ujian_id);
       if (ujian) {
         const questions = await questionRepository.findQuestionsByBankId(ujian.bank_soal_id);
         const studentAnswers = await examSessionRepository.findStudentAnswers(jp.siswa_id, jp.ujian_id);
 
-        let newTotal = 0;
+        let newNilaiPG = 0;
+        let newNilaiEssay = 0;
+        let allEssaysGraded = true;
+
         for (const q of questions) {
           const ans = studentAnswers.find(j => j.soal_id === q.id);
-          if (ans) {
-            if (q.jenis_soal === 'PG' && ans.pilihan_jawaban_id) {
+          if (q.jenis_soal === 'PG') {
+            if (ans && ans.pilihan_jawaban_id) {
               const options = await questionRepository.findOptionsByQuestionId(q.id);
               const kunci = options.find(o => o.is_kunci === 1 || o.is_kunci === true);
               if (kunci && kunci.id === ans.pilihan_jawaban_id) {
-                newTotal += parseFloat(q.bobot || 1.0);
+                newNilaiPG += parseFloat(q.bobot || 1.0);
               }
-            } else if (q.jenis_soal === 'ESSAY') {
-              newTotal += parseFloat(ans.nilai_manual || 0);
+            }
+          } else if (q.jenis_soal === 'ESSAY') {
+            if (ans && ans.id === jp.id) {
+              newNilaiEssay += numericScore;
+            } else if (ans && ans.nilai_manual !== null && ans.nilai_manual !== undefined) {
+              newNilaiEssay += parseFloat(ans.nilai_manual);
+            } else {
+              allEssaysGraded = false;
             }
           }
         }
 
-        await examSessionRepository.saveOrUpdateResult({
+        const newTotal = parseFloat((newNilaiPG + newNilaiEssay).toFixed(2));
+        const kkm = parseFloat(ujian.kkm || 70.0);
+        const statusKelulusan = allEssaysGraded
+          ? (newTotal >= kkm ? 'LULUS' : 'REMIDI')
+          : 'PENDING';
+
+        resultPayload = {
           siswa_id: jp.siswa_id,
           ujian_id: jp.ujian_id,
           jumlah_benar: existingHasil.jumlah_benar,
           jumlah_salah: existingHasil.jumlah_salah,
+          nilai_pg: parseFloat(newNilaiPG.toFixed(2)),
+          nilai_essay: parseFloat(newNilaiEssay.toFixed(2)),
           nilai_akhir: newTotal,
+          status_kelulusan: statusKelulusan,
           waktu_selesai: existingHasil.waktu_selesai
-        });
+        };
+
+        await examSessionRepository.saveOrUpdateResult(resultPayload);
       }
     }
 
-    return true;
+    return {
+      jawaban_id: jp.id,
+      nilai_manual: numericScore,
+      catatan_guru: catatan_guru || null,
+      recalculated_result: resultPayload
+    };
   }
 
   // Rekapitulasi Nilai
@@ -160,6 +215,19 @@ class ExamService {
       throw new ApiError('Ujian tidak ditemukan!', 404, ERROR_CODES.RESOURCE_NOT_FOUND);
     }
     return await examSessionRepository.findExamRecap(ujianId);
+  }
+
+  // Analytics & Reporting
+  async getItemAnalysis(ujianId) {
+    return await analyticsService.calculateItemAnalysis(ujianId);
+  }
+
+  async getClassAnalytics(ujianId) {
+    return await analyticsService.calculateClassAnalytics(ujianId);
+  }
+
+  async exportRecapCSV(ujianId) {
+    return await analyticsService.exportExamRecapCSV(ujianId);
   }
 }
 

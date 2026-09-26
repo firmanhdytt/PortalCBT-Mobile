@@ -216,6 +216,7 @@ async function migrate() {
         teks_jawaban_essay TEXT NULL,
         is_ragu TINYINT(1) NOT NULL DEFAULT 0,
         nilai_manual DECIMAL(5,2) NULL DEFAULT 0.00,
+        catatan_guru TEXT NULL,
         waktu_dijawab DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

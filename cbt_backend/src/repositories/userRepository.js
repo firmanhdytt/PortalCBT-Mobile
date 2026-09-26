@@ -58,6 +58,10 @@ class UserRepository {
     return await db.getOne('SELECT * FROM siswa WHERE nis = ?', [nis]);
   }
 
+  async findStudentByUserId(userId) {
+    return await db.getOne('SELECT * FROM siswa WHERE user_id = ?', [userId]);
+  }
+
   async createStudent(studentData) {
     return await db.insert('siswa', studentData);
   }

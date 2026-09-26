@@ -968,6 +968,7 @@
         <li class="menu-item menu-guru" id="menu-ujian"><a href="#" onclick="showPage('ujian')">Atur Sesi Ujian</a></li>
         <li class="menu-item menu-guru" id="menu-monitoring"><a href="#" onclick="showPage('monitoring')">Monitoring Live</a></li>
         <li class="menu-item menu-guru" id="menu-grading"><a href="#" onclick="showPage('grading')">Koreksi Essay</a></li>
+        <li class="menu-item menu-guru" id="menu-rekap"><a href="#" onclick="showPage('rekap')">Rekap & Analisis</a></li>
         
         <!-- Menu Admin -->
         <li class="menu-item active menu-admin" id="menu-db-admin"><a href="#" onclick="showPage('db-admin')">Dashboard Admin</a></li>
@@ -1148,15 +1149,103 @@
       <!-- PAGE: KOREKSI ESSAY -->
       <div id="page-grading" class="page-view">
         <div class="header-main">
-          <h1>Koreksi Essay</h1>
+          <h1>Koreksi Manual Jawaban Essay</h1>
         </div>
         <div class="form-row" style="margin-bottom:20px;">
-          <div class="form-col">
+          <div class="form-col" style="flex:2;">
             <select id="grading-select-ujian" class="form-control" onchange="loadEssayAnswers(this.value)"></select>
           </div>
+          <div class="form-col">
+            <button class="btn btn-secondary btn-block" onclick="loadEssayAnswers(document.getElementById('grading-select-ujian').value)">🔄 Muat Ulang</button>
+          </div>
         </div>
+        
+        <div class="grid-stats" id="grading-stats-bar" style="display:none; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom:20px;">
+          <div class="stat-card" style="border-left: 4px solid var(--primary);">
+            <span>Total Jawaban Essay</span>
+            <h2 id="grading-stat-total">0</h2>
+          </div>
+          <div class="stat-card" style="border-left: 4px solid #F59E0B;">
+            <span>Belum Dinilai</span>
+            <h2 id="grading-stat-pending">0</h2>
+          </div>
+          <div class="stat-card" style="border-left: 4px solid #10B981;">
+            <span>Selesai Dinilai</span>
+            <h2 id="grading-stat-completed">0</h2>
+          </div>
+        </div>
+
         <div class="card">
-          <div id="essay-list-container"></div>
+          <div id="essay-list-container">
+            <p style="text-align: center; color: var(--text-light); padding:20px;">Silakan pilih sesi ujian untuk memulai koreksi essay.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: REKAPITULASI & ANALISIS NILAI -->
+      <div id="page-rekap" class="page-view">
+        <div class="header-main">
+          <h1>Rekapitulasi Nilai & Analisis Kelas</h1>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-secondary" onclick="openItemAnalysisModal()">📊 Analisis Butir Soal</button>
+            <button class="btn btn-success" onclick="exportRecapCSV()">📥 Unduh Rekap (CSV)</button>
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:20px;">
+          <div class="form-col" style="flex:2;">
+            <select id="rekap-select-ujian" class="form-control" onchange="loadRekapNilai(this.value)"></select>
+          </div>
+          <div class="form-col">
+            <button class="btn btn-primary btn-block" onclick="loadRekapNilai(document.getElementById('rekap-select-ujian').value)">🔄 Refresh Data</button>
+          </div>
+        </div>
+
+        <!-- Metric Cards Analisis Kelas -->
+        <div class="grid-stats" id="rekap-summary-cards" style="display:none; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom:20px;">
+          <div class="stat-card" style="border-left: 4px solid var(--primary);">
+            <span>Rata-Rata Kelas</span>
+            <h2 id="rekap-stat-mean">-</h2>
+          </div>
+          <div class="stat-card" style="border-left: 4px solid #10B981;">
+            <span>Nilai Tertinggi</span>
+            <h2 id="rekap-stat-highest">-</h2>
+          </div>
+          <div class="stat-card" style="border-left: 4px solid #EF4444;">
+            <span>Nilai Terendah</span>
+            <h2 id="rekap-stat-lowest">-</h2>
+          </div>
+          <div class="stat-card" style="border-left: 4px solid #8B5CF6;">
+            <span>Persentase Kelulusan</span>
+            <h2 id="rekap-stat-passing">-</h2>
+          </div>
+        </div>
+
+        <!-- Tabel Rekapitulasi Siswa -->
+        <div class="card">
+          <div class="card-title-bar">
+            <h3>Daftar Nilai Siswa</h3>
+            <span class="badge badge-info" id="rekap-kkm-info">KKM: -</span>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 50px;">No</th>
+                  <th>NIS</th>
+                  <th>Nama Siswa</th>
+                  <th>Kelas</th>
+                  <th>Benar / Salah PG</th>
+                  <th>Nilai PG</th>
+                  <th>Nilai Essay</th>
+                  <th>Nilai Akhir</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="rekap-table-body">
+                <tr><td colspan="9" style="text-align:center; padding:25px; color:var(--text-light);">Silakan pilih sesi ujian untuk melihat rekapitulasi nilai.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -1359,20 +1448,32 @@
         <p style="color:var(--text-light); font-size:13px; line-height:1.5;">Jawaban Anda telah terkirim dan disimpan secara aman ke basis data guru.</p>
         
         <div style="background-color:white; padding:20px; border-radius:16px; border:1.5px solid var(--border); margin:25px 0; text-align:left;">
-          <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13.5px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border);">
+            <span style="font-weight:600; font-size:14px;">Status Kelulusan</span>
+            <span id="siswa-status-badge" class="badge badge-warning" style="font-size:12px; padding:4px 12px;">PENDING</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
             <span>Jawaban Benar (PG)</span>
-            <strong id="siswa-benar-cnt">0</strong>
+            <strong id="siswa-benar-cnt" style="color:var(--success);">0</strong>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13.5px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
             <span>Jawaban Salah (PG)</span>
-            <strong id="siswa-salah-cnt">0</strong>
+            <strong id="siswa-salah-cnt" style="color:var(--danger);">0</strong>
           </div>
-          <div style="border-top:1px dashed var(--border); padding-top:12px; display:flex; justify-content:space-between; font-weight:700; font-size:15px;">
-            <span>Skor Sementara PG</span>
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+            <span>Nilai PG</span>
+            <strong id="siswa-nilai-pg">0</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+            <span>Nilai Essay</span>
+            <strong id="siswa-nilai-essay">0</strong>
+          </div>
+          <div style="border-top:1px dashed var(--border); padding-top:12px; margin-top:8px; display:flex; justify-content:space-between; font-weight:700; font-size:16px;">
+            <span>Nilai Akhir</span>
             <span id="siswa-total-score" style="color:var(--primary);">0 Poin</span>
           </div>
-          <p style="font-size:10px; color:var(--text-light); margin-top:15px; line-height:1.4;">
-            *Catatan: Nilai essay belum diakumulasikan. Nilai akhir akan diupdate di rekap setelah guru memeriksa jawaban essay Anda.
+          <p style="font-size:11px; color:var(--text-light); margin-top:14px; line-height:1.4;" id="siswa-score-note">
+            *Catatan: Jika terdapat soal essay, status kelulusan akan diperbarui setelah guru menyelesaikan koreksi nilai essay.
           </p>
         </div>
         
@@ -1492,6 +1593,46 @@
       <div class="modal-footer" style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
         <button class="btn btn-secondary" onclick="closeModal('create-question-modal')">Batal</button>
         <button class="btn btn-primary" onclick="handleCreateQuestion()">Simpan Soal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ANALISIS BUTIR SOAL PSIKOMETRIK -->
+  <div id="item-analysis-modal" class="modal">
+    <div class="modal-content" style="max-width: 950px;">
+      <span class="close-modal" onclick="closeModal('item-analysis-modal')">&times;</span>
+      <h3>📊 Analisis Psikometrik Butir Soal</h3>
+      <p style="font-size:13px; color:var(--text-light); margin-bottom:15px;" id="item-analysis-subtitle">
+        Tingkat Kesukaran (P), Daya Pembeda (D 27% Upper/Lower), dan Efektivitas Distraktor
+      </p>
+
+      <div style="background:#F8FAFC; border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:18px; font-size:12px; color:#475569; display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
+        <div><strong>Tingkat Kesukaran (P):</strong><br>• P &gt; 0.70: <span class="badge badge-success">Mudah</span><br>• 0.30 - 0.70: <span class="badge badge-info">Sedang</span><br>• P &lt; 0.30: <span class="badge badge-danger">Sukar</span></div>
+        <div><strong>Daya Pembeda (D):</strong><br>• D &ge; 0.40: <span class="badge badge-success">Sangat Baik</span><br>• 0.30 - 0.39: <span class="badge badge-info">Baik</span><br>• 0.20 - 0.29: <span class="badge badge-warning">Cukup</span><br>• D &lt; 0.20: <span class="badge badge-danger">Buruk</span></div>
+        <div><strong>Efektivitas Distraktor:</strong><br>Distribusi pemilihan opsi A-E oleh siswa dan deteksi kunci jawaban (★).</div>
+      </div>
+
+      <div class="table-container" style="max-height: 480px; overflow-y:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px;">No</th>
+              <th style="width: 70px;">Tipe</th>
+              <th>Pertanyaan</th>
+              <th>Kesukaran (P)</th>
+              <th>Pembeda (D)</th>
+              <th>Pola Distraktor</th>
+              <th>Status Butir</th>
+            </tr>
+          </thead>
+          <tbody id="item-analysis-table-body">
+            <tr><td colspan="7" style="text-align:center; padding:20px;">Memuat analisis butir soal...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer" style="margin-top:20px; display:flex; justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('item-analysis-modal')">Tutup</button>
       </div>
     </div>
   </div>

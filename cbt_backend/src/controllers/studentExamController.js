@@ -1,4 +1,5 @@
 const studentExamService = require('../services/studentExamService');
+const userRepository = require('../repositories/userRepository');
 const { ApiResponse } = require('../utils/response');
 
 class StudentExamController {
@@ -30,7 +31,15 @@ class StudentExamController {
   async getExamQuestions(req, res, next) {
     try {
       const ujianId = req.params.ujianId;
-      const siswaId = req.query.siswa_id || req.query.siswaId || req.user?.id;
+      let siswaId = req.query.siswa_id || req.query.siswaId;
+      if (!siswaId && req.user) {
+        if (req.user.role === 'siswa') {
+          const s = await userRepository.findStudentByUserId(req.user.id);
+          siswaId = s ? s.id : req.user.id;
+        } else {
+          siswaId = req.user.id;
+        }
+      }
       const questions = await studentExamService.getExamQuestions(ujianId, siswaId);
       // Contract: Flutter expects raw List<dynamic>
       return ApiResponse.raw(res, questions);

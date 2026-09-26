@@ -103,11 +103,30 @@ router.post(
   (req, res, next) => examController.gradeEssay(req, res, next)
 );
 
-// --- REKAPITULASI HASIL ---
+// --- REKAPITULASI HASIL & EKSPOR ---
 router.get(
   '/rekap-nilai/:ujianId',
   validateParams({ ujianId: { required: true } }),
   (req, res, next) => examController.getExamRecap(req, res, next)
+);
+
+router.get(
+  '/rekap-nilai/:ujianId/export',
+  validateParams({ ujianId: { required: true } }),
+  (req, res, next) => examController.exportRecap(req, res, next)
+);
+
+// --- ANALITIK & ANALISIS BUTIR SOAL ---
+router.get(
+  '/analisis-soal/:ujianId',
+  validateParams({ ujianId: { required: true } }),
+  (req, res, next) => examController.getItemAnalysis(req, res, next)
+);
+
+router.get(
+  '/analisis-kelas/:ujianId',
+  validateParams({ ujianId: { required: true } }),
+  (req, res, next) => examController.getClassAnalytics(req, res, next)
 );
 
 // --- PROCTORING & ANTI-CHEAT MONITORING ---

@@ -61,7 +61,12 @@ class ExamSessionRepository {
   // --- HASIL UJIAN ---
   async findResultsByStudent(siswaId) {
     return await db.query(`
-      SELECT h.*, u.nama_ujian 
+      SELECT 
+        h.*, 
+        u.nama_ujian, 
+        u.kkm, 
+        u.show_result, 
+        u.durasi_menit
       FROM hasil_ujian h
       LEFT JOIN ujian u ON h.ujian_id = u.id
       WHERE h.siswa_id = ?
@@ -90,17 +95,23 @@ class ExamSessionRepository {
     return await db.query(`
       SELECT 
         j.id as jawaban_id,
+        s.id as siswa_id,
         s.nama as siswa_nama,
-        j.siswa_id,
+        s.nis,
+        q.id as soal_id,
+        q.nomor_urut,
         q.teks_soal as soal_teks,
         q.bobot as soal_bobot,
         j.teks_jawaban_essay as jawaban_teks,
-        j.nilai_manual
+        j.nilai_manual,
+        j.catatan_guru,
+        j.waktu_dijawab,
+        IF(j.nilai_manual IS NOT NULL, 1, 0) as is_graded
       FROM jawaban_peserta j
       JOIN soal q ON j.soal_id = q.id
       JOIN siswa s ON j.siswa_id = s.id
       WHERE j.ujian_id = ? AND q.jenis_soal = 'ESSAY'
-      ORDER BY s.nama ASC, q.nomor_urut ASC
+      ORDER BY (j.nilai_manual IS NULL) DESC, s.nama ASC, q.nomor_urut ASC
     `, [ujianId]);
   }
 
@@ -112,22 +123,44 @@ class ExamSessionRepository {
     return await db.update('jawaban_peserta', id, data);
   }
 
-  // --- REKAPITULASI HASIL ---
+  // --- REKAPITULASI HASIL & ANALYTICS ---
   async findExamRecap(ujianId) {
     return await db.query(`
       SELECT 
+        s.id as siswa_id,
         s.nis,
         s.nama,
         k.nama_kelas,
         h.jumlah_benar,
         h.jumlah_salah,
+        h.nilai_pg,
+        h.nilai_essay,
         h.nilai_akhir,
+        h.status_kelulusan,
+        u.kkm,
         h.waktu_selesai
       FROM hasil_ujian h
       JOIN siswa s ON h.siswa_id = s.id
       LEFT JOIN kelas k ON s.kelas_id = k.id
+      JOIN ujian u ON h.ujian_id = u.id
       WHERE h.ujian_id = ?
       ORDER BY h.nilai_akhir DESC, s.nama ASC
+    `, [ujianId]);
+  }
+
+  async findAllAnswersByExam(ujianId) {
+    return await db.query(`
+      SELECT 
+        j.*,
+        s.nis,
+        s.nama,
+        q.jenis_soal,
+        q.bobot,
+        q.nomor_urut
+      FROM jawaban_peserta j
+      JOIN siswa s ON j.siswa_id = s.id
+      JOIN soal q ON j.soal_id = q.id
+      WHERE j.ujian_id = ?
     `, [ujianId]);
   }
 

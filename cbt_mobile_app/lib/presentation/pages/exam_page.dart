@@ -293,43 +293,104 @@ class _ExamPageState extends State<ExamPage> with WidgetsBindingObserver {
           children: [
             const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               decoration: BoxDecoration(
                 color: AppColors.primaryLight,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 children: [
-                  const Text('Skor Pilihan Ganda', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  const Text('Nilai Akhir', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
                   Text(
                     '${result.nilaiAkhir}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 32, color: AppColors.primary),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: AppColors.primary),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: result.statusKelulusan == 'LULUS'
+                          ? AppColors.successLight
+                          : (result.statusKelulusan == 'REMIDI'
+                              ? AppColors.dangerLight
+                              : AppColors.warningLight),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: result.statusKelulusan == 'LULUS'
+                            ? AppColors.success
+                            : (result.statusKelulusan == 'REMIDI' ? AppColors.danger : AppColors.warning),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      result.statusKelulusan == 'LULUS'
+                          ? '✓ LULUS (KKM ${result.kkm.toStringAsFixed(0)})'
+                          : (result.statusKelulusan == 'REMIDI'
+                              ? '✗ REMIDI (KKM ${result.kkm.toStringAsFixed(0)})'
+                              : '⏳ MENUNGGU KOREKSI ESSAY'),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: result.statusKelulusan == 'LULUS'
+                            ? AppColors.success
+                            : (result.statusKelulusan == 'REMIDI' ? AppColors.danger : AppColors.warning),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Column(
-                  children: [
-                    const Text('Benar PG', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                    const SizedBox(height: 4),
-                    Text('${result.jumlahBenar}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.success)),
-                  ],
-                ),
-                Column(
-                  children: [
-                    const Text('Salah PG', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                    const SizedBox(height: 4),
-                    Text('${result.jumlahSalah}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.danger)),
-                  ],
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Jawaban PG:', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      Text(
+                        '${result.jumlahBenar} Benar / ${result.jumlahSalah} Salah',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Nilai PG:', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      Text(
+                        '${result.nilaiPg}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Nilai Essay:', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      Text(
+                        result.statusKelulusan == 'PENDING'
+                            ? 'Menunggu Koreksi'
+                            : '${result.nilaiEssay}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: result.statusKelulusan == 'PENDING' ? Colors.amber.shade800 : AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),

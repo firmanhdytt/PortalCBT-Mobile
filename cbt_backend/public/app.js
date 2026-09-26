@@ -223,6 +223,7 @@ function showPage(pageId) {
   if (pageId === 'ujian') loadUjianPage();
   if (pageId === 'monitoring') loadMonitoringPage();
   if (pageId === 'grading') loadGradingPage();
+  if (pageId === 'rekap') loadRekapPage();
   if (pageId === 'db-admin') loadDashboardAdmin();
   if (pageId === 'master-siswa') loadMasterSiswaPage();
   if (pageId === 'master-kelas') loadMasterKelasPage();
@@ -479,9 +480,18 @@ function siswaSubmitFinal() {
   .then(res => res.json())
   .then(res => {
     siswaSwitchPage('score');
-    document.getElementById("siswa-benar-cnt").innerText = res.hasil.jumlah_benar;
-    document.getElementById("siswa-salah-cnt").innerText = res.hasil.jumlah_salah;
+    document.getElementById("siswa-benar-cnt").innerText = res.hasil.jumlah_benar ?? 0;
+    document.getElementById("siswa-salah-cnt").innerText = res.hasil.jumlah_salah ?? 0;
+    const elPg = document.getElementById("siswa-nilai-pg");
+    if (elPg) elPg.innerText = (res.hasil.nilai_pg ?? res.hasil.nilai_akhir) + " Poin";
+    const elEssay = document.getElementById("siswa-nilai-essay");
+    if (elEssay) elEssay.innerText = (res.hasil.nilai_essay !== null && res.hasil.nilai_essay !== undefined ? res.hasil.nilai_essay : 0) + " Poin";
     document.getElementById("siswa-total-score").innerText = res.hasil.nilai_akhir + " Poin";
+    const statusEl = document.getElementById("siswa-status-badge");
+    if (statusEl && res.hasil.status_kelulusan) {
+      statusEl.innerText = res.hasil.status_kelulusan;
+      statusEl.className = 'badge ' + (res.hasil.status_kelulusan === 'LULUS' ? 'badge-success' : (res.hasil.status_kelulusan === 'REMIDI' ? 'badge-danger' : 'badge-warning'));
+    }
   })
   .catch(() => {
     showToast("Gagal menyimpan ke server!");
@@ -1052,62 +1062,350 @@ function loadGradingPage() {
       const select = document.getElementById("grading-select-ujian");
       select.innerHTML = '<option value="">-- Pilih Sesi Ujian --</option>';
       list.forEach(u => select.innerHTML += `<option value="${u.id}">${u.nama_ujian} (${u.nama_kelas})</option>`);
-    });
+      document.getElementById("essay-list-container").innerHTML = `<p style="text-align: center; color: var(--text-light); padding:20px;">Silakan pilih sesi ujian untuk memulai koreksi essay.</p>`;
+      const bar = document.getElementById("grading-stats-bar");
+      if (bar) bar.style.display = "none";
+    })
+    .catch(err => showToast("Gagal memuat daftar ujian: " + err.message));
 }
 
 function loadEssayAnswers(ujianId) {
   if (!ujianId) {
     document.getElementById("essay-list-container").innerHTML = `<p style="text-align: center; color: var(--text-light); padding:20px;">Silakan pilih sesi ujian.</p>`;
+    const bar = document.getElementById("grading-stats-bar");
+    if (bar) bar.style.display = "none";
     return;
   }
+
+  const container = document.getElementById("essay-list-container");
+  container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--text-light);">Memuat jawaban essay siswa...</p>`;
 
   fetch(`/api/guru/nilai-essay/list/${ujianId}`)
     .then(res => res.json())
     .then(list => {
-      const container = document.getElementById("essay-list-container");
       container.innerHTML = "";
 
-      if (list.length === 0) {
-        container.innerHTML = `<p style="text-align: center; color: var(--text-light); padding:20px;">Tidak ada jawaban essay.</p>`;
+      if (!list || list.length === 0) {
+        const bar = document.getElementById("grading-stats-bar");
+        if (bar) bar.style.display = "none";
+        container.innerHTML = `<p style="text-align: center; color: var(--text-light); padding:25px;">Tidak ada jawaban essay pada sesi ujian ini.</p>`;
         return;
       }
 
-      list.forEach(j => {
+      // Stats
+      const total = list.length;
+      const completed = list.filter(j => j.nilai_manual !== null && j.nilai_manual !== undefined).length;
+      const pending = total - completed;
+
+      const totalEl = document.getElementById("grading-stat-total");
+      const pendingEl = document.getElementById("grading-stat-pending");
+      const compEl = document.getElementById("grading-stat-completed");
+      const bar = document.getElementById("grading-stats-bar");
+      if (totalEl) totalEl.innerText = total;
+      if (pendingEl) pendingEl.innerText = pending;
+      if (compEl) compEl.innerText = completed;
+      if (bar) bar.style.display = "grid";
+
+      list.forEach((j, idx) => {
+        const isGraded = j.nilai_manual !== null && j.nilai_manual !== undefined;
+        const statusBadge = isGraded
+          ? `<span class="badge badge-success">✓ Sudah Dinilai (${j.nilai_manual} / ${j.soal_bobot} Poin)</span>`
+          : `<span class="badge badge-warning">⏳ Belum Dinilai</span>`;
+
         container.innerHTML += `
-          <div class="grading-box">
-            <div style="font-size:12px; color:var(--text-light); margin-bottom:10px;">
-              <strong>Siswa:</strong> ${j.siswa_nama} | <strong>Bobot Maksimal:</strong> ${j.soal_bobot} Poin
+          <div class="grading-box" style="background:#FFFFFF; border: 1.5px solid ${isGraded ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}; margin-bottom: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; border-bottom:1px solid #E2E8F0; padding-bottom:8px;">
+              <div>
+                <strong style="font-size:14px; color:var(--text);">${idx + 1}. ${j.siswa_nama}</strong>
+                <span style="font-size:12px; color:var(--text-light); margin-left:8px;">(NIS: ${j.nis || '-'})</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="badge badge-info">Bobot Maks: ${j.soal_bobot}</span>
+                ${statusBadge}
+              </div>
             </div>
-            <div style="margin-bottom:10px; font-size:13.5px;">
-              <strong>Pertanyaan:</strong><br> ${j.soal_teks}
+            
+            <div style="margin-bottom:12px; font-size:13.5px; line-height:1.5;">
+              <strong style="color:var(--text);">Pertanyaan:</strong><br>
+              <div style="margin-top:4px; padding:8px 12px; background:#F8FAFC; border-radius:6px; border:1px solid #E2E8F0;">
+                ${j.soal_teks}
+              </div>
             </div>
-            <div class="essay-student-ans">
-              <strong>Jawaban Siswa:</strong><br> ${j.jawaban_teks || '<i>(Tidak dijawab)</i>'}
+
+            <div style="margin-bottom:14px;">
+              <strong style="color:var(--text); font-size:13.5px;">Jawaban Siswa:</strong>
+              <div class="essay-student-ans" style="margin-top:4px; font-style:normal; white-space:pre-wrap; background:#F1F5F9; border-left:4px solid var(--primary); padding:10px 14px;">
+                ${j.jawaban_teks ? j.jawaban_teks : '<i style="color:var(--text-light);">(Siswa tidak memberikan jawaban)</i>'}
+              </div>
             </div>
-            <div style="display:flex; align-items:center; gap:10px;">
-              <input type="number" id="grade-input-${j.jawaban_id}" class="form-control" style="width:70px; text-align:center;" min="0" max="${j.soal_bobot}" value="${j.nilai_manual}">
-              <button class="btn btn-primary" onclick="submitGrade(${j.jawaban_id}, ${ujianId})">Simpan Nilai</button>
+
+            <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E2E8F0;">
+              <div style="width:130px;">
+                <label style="display:block; font-size:11px; font-weight:700; margin-bottom:4px; color:#475569;">NILAI (0 - ${j.soal_bobot})</label>
+                <input type="number" id="grade-input-${j.jawaban_id}" class="form-control" style="text-align:center; font-weight:700; font-size:15px;" min="0" max="${j.soal_bobot}" step="0.5" value="${j.nilai_manual !== null && j.nilai_manual !== undefined ? j.nilai_manual : ''}" placeholder="0">
+              </div>
+              <div style="flex:1; min-width:200px;">
+                <label style="display:block; font-size:11px; font-weight:700; margin-bottom:4px; color:#475569;">CATATAN / FEEDBACK GURU (OPSIONAL)</label>
+                <input type="text" id="grade-note-${j.jawaban_id}" class="form-control" value="${j.catatan_guru ? j.catatan_guru.replace(/"/g, '&quot;') : ''}" placeholder="Catatan evaluasi untuk siswa...">
+              </div>
+              <div>
+                <button class="btn btn-primary" onclick="submitGrade(${j.jawaban_id}, ${ujianId}, ${j.soal_bobot})" style="padding:10px 18px; font-weight:600;">
+                  💾 Simpan Nilai
+                </button>
+              </div>
             </div>
           </div>
         `;
       });
+    })
+    .catch(err => {
+      container.innerHTML = `<p style="color:var(--danger); text-align:center; padding:20px;">Gagal memuat jawaban essay: ${err.message}</p>`;
     });
 }
 
-function submitGrade(jawabanId, ujianId) {
-  const val = document.getElementById(`grade-input-${jawabanId}`).value;
-  if (val === "") return;
+function submitGrade(jawabanId, ujianId, maxBobot) {
+  const inputEl = document.getElementById(`grade-input-${jawabanId}`);
+  const noteEl = document.getElementById(`grade-note-${jawabanId}`);
+  const val = inputEl ? inputEl.value.trim() : '';
+  const note = noteEl ? noteEl.value.trim() : '';
+
+  if (val === "" || isNaN(val)) {
+    showToast("Harap masukkan nilai angka yang valid!");
+    if (inputEl) inputEl.focus();
+    return;
+  }
+
+  const numVal = parseFloat(val);
+  if (numVal < 0 || numVal > maxBobot) {
+    showToast(`Nilai harus di antara 0 dan ${maxBobot}!`);
+    if (inputEl) inputEl.focus();
+    return;
+  }
 
   fetch('/api/guru/nilai-essay/grade', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jawaban_id: jawabanId, nilai: val })
+    body: JSON.stringify({
+      jawaban_id: jawabanId,
+      nilai: numVal,
+      catatan_guru: note
+    })
   })
-  .then(res => res.json())
-  .then(() => {
-    showToast("Nilai berhasil disimpan!");
+  .then(res => {
+    if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal menyimpan nilai"); });
+    return res.json();
+  })
+  .then(res => {
+    showToast(res.message || "Nilai essay berhasil disimpan!");
     loadEssayAnswers(ujianId);
+  })
+  .catch(err => {
+    showToast("Error: " + err.message);
   });
+}
+
+// REKAP & ANALISIS PAGE
+function loadRekapPage() {
+  fetch('/api/guru/ujian')
+    .then(res => res.json())
+    .then(list => {
+      const select = document.getElementById("rekap-select-ujian");
+      select.innerHTML = '<option value="">-- Pilih Sesi Ujian --</option>';
+      list.forEach(u => select.innerHTML += `<option value="${u.id}">${u.nama_ujian} (${u.nama_kelas})</option>`);
+      
+      const cards = document.getElementById("rekap-summary-cards");
+      if (cards) cards.style.display = "none";
+      const kkmEl = document.getElementById("rekap-kkm-info");
+      if (kkmEl) kkmEl.innerText = "KKM: -";
+      document.getElementById("rekap-table-body").innerHTML = `<tr><td colspan="9" style="text-align:center; padding:25px; color:var(--text-light);">Silakan pilih sesi ujian untuk melihat rekapitulasi nilai.</td></tr>`;
+    })
+    .catch(err => showToast("Gagal memuat ujian: " + err.message));
+}
+
+function loadRekapNilai(ujianId) {
+  if (!ujianId) {
+    const cards = document.getElementById("rekap-summary-cards");
+    if (cards) cards.style.display = "none";
+    document.getElementById("rekap-table-body").innerHTML = `<tr><td colspan="9" style="text-align:center; padding:25px; color:var(--text-light);">Silakan pilih sesi ujian untuk melihat rekapitulasi nilai.</td></tr>`;
+    return;
+  }
+
+  const tbody = document.getElementById("rekap-table-body");
+  tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:25px; color:var(--text-light);">Memuat rekapitulasi nilai...</td></tr>`;
+
+  // 1. Fetch Class Aggregate Analytics
+  fetch(`/api/guru/analisis-kelas/${ujianId}`)
+    .then(res => res.json())
+    .then(analytics => {
+      const cards = document.getElementById("rekap-summary-cards");
+      if (analytics && analytics.total_peserta > 0) {
+        document.getElementById("rekap-stat-mean").innerText = analytics.mean ?? '-';
+        document.getElementById("rekap-stat-highest").innerText = analytics.highest ?? '-';
+        document.getElementById("rekap-stat-lowest").innerText = analytics.lowest ?? '-';
+        document.getElementById("rekap-stat-passing").innerText = (analytics.passing_rate ?? 0) + '%';
+        if (cards) cards.style.display = "grid";
+      } else {
+        if (cards) cards.style.display = "none";
+      }
+    })
+    .catch(() => {
+      const cards = document.getElementById("rekap-summary-cards");
+      if (cards) cards.style.display = "none";
+    });
+
+  // 2. Fetch Student Recap Table
+  fetch(`/api/guru/rekap-nilai/${ujianId}`)
+    .then(res => res.json())
+    .then(list => {
+      tbody.innerHTML = "";
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:25px; color:var(--text-light);">Belum ada peserta yang mengumpulkan ujian ini.</td></tr>`;
+        return;
+      }
+
+      const kkm = list[0].kkm ?? 75;
+      const kkmEl = document.getElementById("rekap-kkm-info");
+      if (kkmEl) kkmEl.innerText = `KKM: ${kkm}`;
+
+      list.forEach((r, idx) => {
+        let statusBadge = '<span class="badge badge-warning">PENDING</span>';
+        if (r.status_kelulusan === 'LULUS') {
+          statusBadge = '<span class="badge badge-success">✓ LULUS</span>';
+        } else if (r.status_kelulusan === 'REMIDI') {
+          statusBadge = '<span class="badge badge-danger">✗ REMIDI</span>';
+        }
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><strong>${r.nis}</strong></td>
+            <td>${r.nama_siswa}</td>
+            <td>${r.nama_kelas}</td>
+            <td>
+              <span style="color:var(--success); font-weight:700;">${r.jumlah_benar} Benar</span> / 
+              <span style="color:var(--danger); font-weight:700;">${r.jumlah_salah} Salah</span>
+            </td>
+            <td>${r.nilai_pg !== null && r.nilai_pg !== undefined ? r.nilai_pg : '-'}</td>
+            <td>${r.nilai_essay !== null && r.nilai_essay !== undefined ? r.nilai_essay : '<i style="color:var(--text-light);">-</i>'}</td>
+            <td><strong style="color:var(--primary); font-size:15px;">${r.nilai_akhir}</strong></td>
+            <td>${statusBadge}</td>
+          </tr>
+        `;
+      });
+    })
+    .catch(err => {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:25px; color:var(--danger);">Gagal memuat rekap: ${err.message}</td></tr>`;
+    });
+}
+
+function exportRecapCSV() {
+  const ujianId = document.getElementById("rekap-select-ujian").value;
+  if (!ujianId) {
+    showToast("Silakan pilih sesi ujian terlebih dahulu untuk mengekspor rekap!");
+    return;
+  }
+
+  showToast("Menyiapkan berkas CSV...");
+  fetch(`/api/guru/rekap-nilai/${ujianId}/export?format=csv`)
+    .then(res => {
+      if (!res.ok) throw new Error("Gagal mengunduh berkas rekapitulasi.");
+      return res.blob();
+    })
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rekap_nilai_ujian_${ujianId}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      showToast("Unduhan berkas CSV berhasil!");
+    })
+    .catch(err => {
+      showToast("Gagal ekspor CSV: " + err.message);
+    });
+}
+
+function openItemAnalysisModal() {
+  const ujianId = document.getElementById("rekap-select-ujian").value;
+  if (!ujianId) {
+    showToast("Pilih sesi ujian terlebih dahulu untuk melihat analisis butir soal!");
+    return;
+  }
+
+  openModal('item-analysis-modal');
+  const tbody = document.getElementById("item-analysis-table-body");
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:25px; color:var(--text-light);">Menganalisis data psikometrik butir soal...</td></tr>`;
+
+  fetch(`/api/guru/analisis-soal/${ujianId}`)
+    .then(res => res.json())
+    .then(items => {
+      tbody.innerHTML = "";
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:25px; color:var(--text-light);">Belum ada data respons siswa untuk dianalisis.</td></tr>`;
+        return;
+      }
+
+      items.forEach((it, idx) => {
+        // Kesukaran badge
+        let pBadge = '-';
+        if (it.tingkat_kesukaran) {
+          const k = it.tingkat_kesukaran.kategori;
+          const bg = k === 'Mudah' ? 'badge-success' : (k === 'Sedang' ? 'badge-info' : 'badge-danger');
+          pBadge = `<strong>${it.tingkat_kesukaran.index}</strong> <span class="badge ${bg}">${k}</span>`;
+        }
+
+        // Pembeda badge
+        let dBadge = '-';
+        if (it.daya_pembeda) {
+          const k = it.daya_pembeda.kategori;
+          const bg = k === 'Sangat Baik' ? 'badge-success' : (k === 'Baik' ? 'badge-info' : (k === 'Cukup' ? 'badge-warning' : 'badge-danger'));
+          dBadge = `<strong>${it.daya_pembeda.index}</strong> <span class="badge ${bg}">${k}</span>`;
+        }
+
+        // Distractor pills
+        let distractorHtml = '';
+        if (it.distractor_efficiency && it.distractor_efficiency.length > 0) {
+          distractorHtml = '<div style="display:flex; gap:4px; flex-wrap:wrap;">';
+          it.distractor_efficiency.forEach(opt => {
+            const isKey = opt.is_kunci;
+            const borderCol = isKey ? '#10B981' : '#CBD5E1';
+            const bgCol = isKey ? 'rgba(16, 185, 129, 0.1)' : '#F8FAFC';
+            distractorHtml += `
+              <span style="font-size:11px; padding:2px 6px; border:1px solid ${borderCol}; background:${bgCol}; border-radius:4px;" title="${opt.teks_pilihan}">
+                <strong>${opt.label}${isKey ? '★' : ''}</strong>: ${opt.count} (${opt.percentage}%)
+              </span>
+            `;
+          });
+          distractorHtml += '</div>';
+        } else {
+          distractorHtml = '<i style="color:var(--text-light); font-size:12px;">Essay / Belum ada data</i>';
+        }
+
+        // Status Butir / Rekomendasi
+        let recBadge = '<span class="badge badge-info">-</span>';
+        if (it.rekomendasi) {
+          const bg = it.rekomendasi === 'Diterima' ? 'badge-success' : (it.rekomendasi === 'Direvisi' ? 'badge-warning' : 'badge-danger');
+          recBadge = `<span class="badge ${bg}">${it.rekomendasi}</span>`;
+        }
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><span class="badge ${it.jenis_soal === 'PG' ? 'badge-primary' : 'badge-info'}">${it.jenis_soal}</span></td>
+            <td style="max-width:240px; font-size:12.5px;">${it.teks_soal}</td>
+            <td>${pBadge}</td>
+            <td>${dBadge}</td>
+            <td>${distractorHtml}</td>
+            <td>${recBadge}</td>
+          </tr>
+        `;
+      });
+    })
+    .catch(err => {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:25px; color:var(--danger);">Gagal memuat analisis butir soal: ${err.message}</td></tr>`;
+    });
 }
 
 // ADMIN LOGIC

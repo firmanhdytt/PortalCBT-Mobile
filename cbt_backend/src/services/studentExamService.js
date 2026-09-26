@@ -227,23 +227,41 @@ class StudentExamService {
     }
 
     totalNilai = nilaiPG;
+    let nilaiEssay = 0;
+    let hasEssay = false;
+    let allEssaysGraded = true;
 
-    // Pertahankan nilai essay yang telah dinilai guru jika ada
+    // Hitung / pertahankan nilai essay jika ada
     for (const s of soalList) {
       if (s.jenis_soal === 'ESSAY') {
+        hasEssay = true;
         const j = jawabanSiswa.find(jw => jw.soal_id === s.id);
-        if (j && j.nilai_manual) {
-          totalNilai += parseFloat(j.nilai_manual || 0);
+        if (j && j.nilai_manual !== null && j.nilai_manual !== undefined) {
+          nilaiEssay += parseFloat(j.nilai_manual);
+        } else {
+          allEssaysGraded = false;
         }
       }
     }
 
+    totalNilai = parseFloat((nilaiPG + nilaiEssay).toFixed(2));
+    const kkm = parseFloat(ujian.kkm || 70.0);
+
+    let statusKelulusan = 'PENDING';
+    if (!hasEssay || allEssaysGraded) {
+      statusKelulusan = (totalNilai >= kkm) ? 'LULUS' : 'REMIDI';
+    }
+
     const hasilFields = {
+      attempt_id: attempt ? attempt.id : null,
       siswa_id: sId,
       ujian_id: uId,
       jumlah_benar: benar,
       jumlah_salah: salah,
+      nilai_pg: parseFloat(nilaiPG.toFixed(2)),
+      nilai_essay: parseFloat(nilaiEssay.toFixed(2)),
       nilai_akhir: totalNilai,
+      status_kelulusan: statusKelulusan,
       waktu_selesai: new Date()
     };
 

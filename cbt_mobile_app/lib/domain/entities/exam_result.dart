@@ -5,7 +5,11 @@ class ExamResult {
   final String namaUjian;
   final int jumlahBenar;
   final int jumlahSalah;
+  final double nilaiPg;
+  final double nilaiEssay;
   final double nilaiAkhir;
+  final String statusKelulusan;
+  final double kkm;
   final String waktuSelesai;
 
   const ExamResult({
@@ -15,7 +19,11 @@ class ExamResult {
     required this.namaUjian,
     required this.jumlahBenar,
     required this.jumlahSalah,
+    this.nilaiPg = 0.0,
+    this.nilaiEssay = 0.0,
     required this.nilaiAkhir,
+    this.statusKelulusan = 'PENDING',
+    this.kkm = 75.0,
     required this.waktuSelesai,
   });
 }

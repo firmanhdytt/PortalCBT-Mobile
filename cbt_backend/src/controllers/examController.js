@@ -68,9 +68,15 @@ class ExamController {
 
   async gradeEssay(req, res, next) {
     try {
-      await examService.gradeEssay(req.body);
+      const { jawaban_id, nilai, catatan_guru } = req.body;
+      const result = await examService.gradeEssay({
+        jawaban_id,
+        nilai,
+        catatan_guru
+      });
       return res.status(200).json({
-        message: 'Nilai essay berhasil disimpan!'
+        message: 'Nilai essay berhasil disimpan dan nilai akhir peserta berhasil diperbarui!',
+        data: result
       });
     } catch (err) {
       next(err);
@@ -82,6 +88,44 @@ class ExamController {
     try {
       const data = await examService.getExamRecap(req.params.ujianId);
       return ApiResponse.raw(res, data);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Analisis Butir Soal (Difficulty & Discrimination)
+  async getItemAnalysis(req, res, next) {
+    try {
+      const data = await examService.getItemAnalysis(req.params.ujianId);
+      return ApiResponse.raw(res, data);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Analisis Statistik Kelas
+  async getClassAnalytics(req, res, next) {
+    try {
+      const data = await examService.getClassAnalytics(req.params.ujianId);
+      return ApiResponse.raw(res, data);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Ekspor Rekap Nilai (CSV)
+  async exportRecap(req, res, next) {
+    try {
+      const format = req.query.format || 'csv';
+      if (format.toLowerCase() === 'csv') {
+        const csv = await examService.exportRecapCSV(req.params.ujianId);
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="rekap_nilai_ujian_${req.params.ujianId}.csv"`);
+        return res.status(200).send(csv);
+      } else {
+        const data = await examService.getExamRecap(req.params.ujianId);
+        return ApiResponse.raw(res, data);
+      }
     } catch (err) {
       next(err);
     }
