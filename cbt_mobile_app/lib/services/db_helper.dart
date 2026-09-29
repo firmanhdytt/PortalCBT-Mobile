@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import '../core/utils/type_parser.dart';
 
 class DbHelper {
   static Database? _database;
@@ -224,9 +225,9 @@ class DbHelper {
     final list = await db.query('jawaban_peserta', where: 'ujian_id = ?', whereArgs: [ujianId]);
     Map<int, String> statusMap = {};
     for (var j in list) {
-      int soalId = j['soal_id'] as int;
-      int isRagu = (j['is_ragu'] ?? 0) as int;
-      int? pilihanId = j['pilihan_jawaban_id'] as int?;
+      int soalId = TypeParser.parseIntOr(j['soal_id'], 0);
+      int isRagu = TypeParser.parseIntOr(j['is_ragu'], 0);
+      int? pilihanId = TypeParser.parseInt(j['pilihan_jawaban_id']);
       String essay = (j['teks_jawaban_essay'] ?? '').toString().trim();
 
       if (isRagu == 1) {

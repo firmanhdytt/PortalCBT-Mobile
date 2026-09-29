@@ -2,6 +2,11 @@ import '../../domain/entities/exam.dart';
 import '../../domain/entities/question.dart';
 import '../../domain/entities/answer.dart';
 import '../../domain/entities/exam_result.dart';
+import '../../domain/entities/student_card.dart';
+import '../../domain/entities/certificate.dart';
+import '../../domain/entities/user_profile.dart';
+import '../../domain/entities/app_notification.dart';
+import '../../domain/entities/user_preference.dart';
 import '../../domain/repositories/exam_repository.dart';
 import '../datasources/exam_remote_datasource.dart';
 import '../datasources/exam_local_datasource.dart';
@@ -137,5 +142,77 @@ class ExamRepositoryImpl implements ExamRepository {
       ujianId: ujianId,
       siswaId: siswaId,
     );
+  }
+
+  @override
+  Future<StudentCard> getStudentCard() async {
+    return await _remote.fetchStudentCard();
+  }
+
+  @override
+  Future<List<Certificate>> getCertificates() async {
+    return await _remote.fetchCertificates();
+  }
+
+  @override
+  Future<UserProfile> getProfile() async {
+    return await _remote.fetchProfile();
+  }
+
+  @override
+  Future<UserProfile> updateProfile({String? nama, String? email}) async {
+    return await _remote.updateProfile(nama: nama, email: email);
+  }
+
+  @override
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    return await _remote.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> uploadAvatar(String base64Image) async {
+    return await _remote.uploadAvatar(base64Image);
+  }
+
+  @override
+  Future<bool> deleteAvatar() async {
+    return await _remote.deleteAvatar();
+  }
+
+  // Phase 10: In-App Notifications & Preferences
+  @override
+  Future<List<AppNotification>> getNotifications() async {
+    return await _remote.fetchNotifications();
+  }
+
+  @override
+  Future<int> getUnreadNotificationCount() async {
+    return await _remote.fetchUnreadNotificationCount();
+  }
+
+  @override
+  Future<bool> markNotificationAsRead(int id) async {
+    return await _remote.markNotificationRead(id);
+  }
+
+  @override
+  Future<bool> markAllNotificationsAsRead() async {
+    return await _remote.markAllNotificationsRead();
+  }
+
+  @override
+  Future<UserPreference> getUserPreferences() async {
+    return await _remote.fetchUserPreferences();
+  }
+
+  @override
+  Future<UserPreference> updateUserPreferences({String? theme, String? fontScale, bool? highContrast}) async {
+    return await _remote.updateUserPreferences(theme: theme, fontScale: fontScale, highContrast: highContrast);
   }
 }

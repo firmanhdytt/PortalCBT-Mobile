@@ -1,5 +1,6 @@
 const proctoringRepository = require('../repositories/proctoringRepository');
 const examRepository = require('../repositories/examRepository');
+const notificationService = require('./notificationService');
 const { ApiError } = require('../utils/response');
 const { ERROR_CODES } = require('../utils/errorCodes');
 
@@ -86,6 +87,9 @@ class ProctoringService {
       reason: reason.trim()
     });
 
+    // Kirim notifikasi ke guru pengampu
+    notificationService.onUnlockRequested(uId, sId, reason.trim()).catch(() => {});
+
     return {
       message: 'Permohonan buka kunci berhasil dikirimkan ke guru pengawas.',
       request: newRequest
@@ -135,6 +139,9 @@ class ProctoringService {
         await proctoringRepository.updateAttemptStatus(unlockReq.attempt_id, 'IN_PROGRESS');
       }
     }
+
+    // Kirim notifikasi status persetujuan ke siswa
+    notificationService.onUnlockProcessed(unlockReq.ujian_id, unlockReq.siswa_id, status === 'APPROVED').catch(() => {});
 
     return {
       request_id: reqId,

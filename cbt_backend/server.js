@@ -9,10 +9,14 @@ const { errorHandler, notFoundHandler } = require('./src/middlewares/errorHandle
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Global Middlewares
+const { securityHeaders, sanitizeInputs } = require('./src/middlewares/securityMiddleware');
+
+// Global Security & Parsing Middlewares
+app.use(securityHeaders);
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(sanitizeInputs);
 
 // Serve Static Frontend Assets (Web Portal)
 app.use(express.static(path.join(__dirname, 'public')));
@@ -24,6 +28,17 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
+});
+
+const certificateController = require('./src/controllers/certificateController');
+
+// Direct Web Views (Printable layout without /api prefix)
+app.get('/sertifikat/print/:certificateNumber', (req, res, next) =>
+  certificateController.printCertificateHtml(req, res, next)
+);
+app.get('/kartu-ujian/print/:siswaId', (req, res, next) => {
+  req.query.siswa_id = req.params.siswaId;
+  return certificateController.printStudentCardHtml(req, res, next);
 });
 
 // Mount All API Routes

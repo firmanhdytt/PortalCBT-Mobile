@@ -45,6 +45,7 @@ class _ExamPageState extends State<ExamPage> with WidgetsBindingObserver {
   late SyncEngine _syncEngine;
   final TextEditingController _essayController = TextEditingController();
   bool _isInitialized = false;
+  double _textScaleFactor = 1.0;
 
   @override
   void initState() {
@@ -522,6 +523,64 @@ class _ExamPageState extends State<ExamPage> with WidgetsBindingObserver {
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               actions: [
+                // Accessibility Font Zoom Controls (Phase 10)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          if (_textScaleFactor > 0.85) {
+                            _textScaleFactor = (_textScaleFactor - 0.15).clamp(0.85, 1.45);
+                          }
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        margin: const EdgeInsets.only(right: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text('A-', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _textScaleFactor = 1.0;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        margin: const EdgeInsets.only(right: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text('A', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          if (_textScaleFactor < 1.45) {
+                            _textScaleFactor = (_textScaleFactor + 0.15).clamp(0.85, 1.45);
+                          }
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        margin: const EdgeInsets.only(right: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text('A+', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                      ),
+                    ),
+                  ],
+                ),
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.only(right: 15.0),
@@ -655,7 +714,11 @@ class _ExamPageState extends State<ExamPage> with WidgetsBindingObserver {
                 ],
               ),
             ),
-            body: Column(
+            body: MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(_textScaleFactor),
+              ),
+              child: Column(
               children: [
                 // Sub-status bar with live sync indicator
                 Container(
@@ -827,6 +890,7 @@ class _ExamPageState extends State<ExamPage> with WidgetsBindingObserver {
               ],
             ),
           ),
+        ),
 
           // 1. Dynamic Anti-Photo Watermark Overlay (Floating layer)
           AntiCheatWatermark(

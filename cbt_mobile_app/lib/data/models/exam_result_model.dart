@@ -1,3 +1,4 @@
+import '../../core/utils/type_parser.dart';
 import '../../domain/entities/exam_result.dart';
 
 class ExamResultModel extends ExamResult {
@@ -17,19 +18,19 @@ class ExamResultModel extends ExamResult {
   });
 
   factory ExamResultModel.fromJson(Map<String, dynamic> json) {
-    final na = (json['nilai_akhir'] as num?)?.toDouble() ?? 0.0;
+    final na = TypeParser.parseDoubleOr(json['nilai_akhir'], 0.0);
     return ExamResultModel(
-      id: json['id'] as int? ?? 0,
-      siswaId: json['siswa_id'] as int? ?? 0,
-      ujianId: json['ujian_id'] as int? ?? 0,
+      id: TypeParser.parseIntOr(json['id'], 0),
+      siswaId: TypeParser.parseIntOr(json['siswa_id'], 0),
+      ujianId: TypeParser.parseIntOr(json['ujian_id'], 0),
       namaUjian: (json['nama_ujian'] ?? 'Ujian').toString(),
-      jumlahBenar: json['jumlah_benar'] as int? ?? 0,
-      jumlahSalah: json['jumlah_salah'] as int? ?? 0,
-      nilaiPg: (json['nilai_pg'] as num?)?.toDouble() ?? na,
-      nilaiEssay: (json['nilai_essay'] as num?)?.toDouble() ?? 0.0,
+      jumlahBenar: TypeParser.parseIntOr(json['jumlah_benar'], 0),
+      jumlahSalah: TypeParser.parseIntOr(json['jumlah_salah'], 0),
+      nilaiPg: TypeParser.parseDoubleOr(json['nilai_pg'], na),
+      nilaiEssay: TypeParser.parseDoubleOr(json['nilai_essay'], 0.0),
       nilaiAkhir: na,
       statusKelulusan: (json['status_kelulusan'] ?? 'PENDING').toString(),
-      kkm: (json['kkm'] as num?)?.toDouble() ?? 75.0,
+      kkm: TypeParser.parseDoubleOr(json['kkm'], 75.0),
       waktuSelesai: (json['waktu_selesai'] ?? '-').toString(),
     );
   }

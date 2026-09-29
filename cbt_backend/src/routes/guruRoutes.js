@@ -3,11 +3,16 @@ const router = express.Router();
 const questionController = require('../controllers/questionController');
 const examController = require('../controllers/examController');
 const proctoringController = require('../controllers/proctoringController');
+const certificateController = require('../controllers/certificateController');
+const masterController = require('../controllers/masterController');
 const { authenticate, requireRole } = require('../middlewares/authMiddleware');
 const { validateBody, validateParams } = require('../middlewares/validator');
 
 // Proteksi seluruh rute guru: Wajib Login & Role Guru atau Admin
 router.use(authenticate, requireRole(['guru', 'admin']));
+
+// --- WORKSPACE GURU ---
+router.get('/workspace', (req, res, next) => masterController.getWorkspace(req, res, next));
 
 // --- BANK SOAL ---
 router.get('/bank-soal', (req, res, next) => questionController.getBankSoal(req, res, next));
@@ -18,6 +23,18 @@ router.post(
     judul: { required: true }
   }),
   (req, res, next) => questionController.createBankSoal(req, res, next)
+);
+
+router.put(
+  '/bank-soal/:id',
+  validateParams({ id: { required: true } }),
+  (req, res, next) => questionController.updateBankSoal(req, res, next)
+);
+
+router.delete(
+  '/bank-soal/:id',
+  validateParams({ id: { required: true } }),
+  (req, res, next) => questionController.deleteBankSoal(req, res, next)
 );
 
 // --- SOAL ---
@@ -149,6 +166,49 @@ router.post(
     siswa_id: { required: true }
   }),
   (req, res, next) => proctoringController.manualUnlock(req, res, next)
+);
+
+// --- SERTIFIKAT DIGITAL & KELULUSAN ---
+router.post(
+  '/sertifikat/issue',
+  validateBody({
+    ujian_id: { required: true },
+    siswa_id: { required: true }
+  }),
+  (req, res, next) => certificateController.issueCertificate(req, res, next)
+);
+
+router.post(
+  '/sertifikat/issue-batch',
+  validateBody({
+    ujian_id: { required: true }
+  }),
+  (req, res, next) => certificateController.issueBatchCertificates(req, res, next)
+);
+
+router.get(
+  '/sertifikat/ujian/:ujianId',
+  validateParams({ ujianId: { required: true } }),
+  (req, res, next) => certificateController.getExamCertificates(req, res, next)
+);
+
+// --- KARTU PESERTA UJIAN (ADMIN / GURU) ---
+router.get(
+  '/kartu-ujian/kelas/:kelasId',
+  validateParams({ kelasId: { required: true } }),
+  (req, res, next) => certificateController.getClassCards(req, res, next)
+);
+
+router.get(
+  '/kartu-ujian/kelas/:kelasId/print',
+  validateParams({ kelasId: { required: true } }),
+  (req, res, next) => certificateController.printClassCardsHtml(req, res, next)
+);
+
+router.get(
+  '/kartu-ujian/student/:siswaId/print',
+  validateParams({ siswaId: { required: true } }),
+  (req, res, next) => certificateController.printStudentCardHtml(req, res, next)
 );
 
 module.exports = router;

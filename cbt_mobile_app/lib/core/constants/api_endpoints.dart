@@ -21,4 +21,21 @@ class ApiEndpoints {
   static const String requestUnlock = '/siswa/ujian/unlock-request';
   static String unlockStatus(int ujianId, int siswaId) =>
       '/siswa/ujian/unlock-status/$ujianId/$siswaId';
+
+  // Phase 8: Kartu Ujian & Sertifikat Digital
+  static const String studentCard = '/siswa/kartu-ujian';
+  static const String studentCertificates = '/siswa/sertifikat';
+
+  // Phase 9: Profile & Avatar Management
+  static const String profile = '/profile';
+  static const String changePassword = '/profile/change-password';
+  static const String uploadAvatar = '/profile/avatar';
+  static const String deleteAvatar = '/profile/avatar';
+
+  // Phase 10: In-App Notifications & Preferences
+  static const String notifications = '/notifications';
+  static const String unreadNotifications = '/notifications/unread-count';
+  static String markNotificationRead(int id) => '/notifications/$id/read';
+  static const String markAllNotificationsRead = '/notifications/read-all';
+  static const String preferences = '/preferences';
 }

@@ -2,6 +2,7 @@ const examRepository = require('../repositories/examRepository');
 const examSessionRepository = require('../repositories/examSessionRepository');
 const questionRepository = require('../repositories/questionRepository');
 const proctoringRepository = require('../repositories/proctoringRepository');
+const notificationService = require('./notificationService');
 const { ApiError } = require('../utils/response');
 const { ERROR_CODES } = require('../utils/errorCodes');
 
@@ -270,6 +271,9 @@ class StudentExamService {
     if (attempt) {
       await proctoringRepository.updateAttemptStatus(attempt.id, 'SUBMITTED');
     }
+
+    // Kirim notifikasi submit ujian ke guru dan siswa
+    notificationService.onExamSubmitted(uId, sId, null, hasEssay && !allEssaysGraded).catch(() => {});
 
     return hasilFields;
   }

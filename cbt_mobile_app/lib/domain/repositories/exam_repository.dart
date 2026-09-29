@@ -3,6 +3,12 @@ import '../entities/question.dart';
 import '../entities/answer.dart';
 import '../entities/exam_result.dart';
 
+import '../entities/student_card.dart';
+import '../entities/certificate.dart';
+import '../entities/user_profile.dart';
+import '../entities/app_notification.dart';
+import '../entities/user_preference.dart';
+
 abstract class ExamRepository {
   Future<List<Exam>> getActiveExams(int kelasId, int siswaId);
   Future<Exam> verifyExamToken(int ujianId, String token);
@@ -29,4 +35,19 @@ abstract class ExamRepository {
     required int ujianId,
     required int siswaId,
   });
+  Future<StudentCard> getStudentCard();
+  Future<List<Certificate>> getCertificates();
+  Future<UserProfile> getProfile();
+  Future<UserProfile> updateProfile({String? nama, String? email});
+  Future<bool> changePassword({required String currentPassword, required String newPassword});
+  Future<Map<String, dynamic>> uploadAvatar(String base64Image);
+  Future<bool> deleteAvatar();
+
+  // Phase 10: Notifications & Accessibility Preferences
+  Future<List<AppNotification>> getNotifications();
+  Future<int> getUnreadNotificationCount();
+  Future<bool> markNotificationAsRead(int id);
+  Future<bool> markAllNotificationsAsRead();
+  Future<UserPreference> getUserPreferences();
+  Future<UserPreference> updateUserPreferences({String? theme, String? fontScale, bool? highContrast});
 }

@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import '../../core/utils/type_parser.dart';
 import '../../core/security/encryption_service.dart';
 import '../../core/storage/local_database.dart';
 import '../models/student_model.dart';
@@ -264,9 +265,9 @@ class ExamLocalDataSource {
     final map = <int, String>{};
 
     for (final r in rows) {
-      final soalId = r['soal_id'] as int;
-      final isRagu = (r['is_ragu'] as int? ?? 0) == 1;
-      final pilihanId = r['pilihan_jawaban_id'] as int?;
+      final soalId = TypeParser.parseIntOr(r['soal_id'], 0);
+      final isRagu = TypeParser.parseIntOr(r['is_ragu'], 0) == 1;
+      final pilihanId = TypeParser.parseInt(r['pilihan_jawaban_id']);
       final essay = (r['teks_jawaban_essay'] ?? '').toString().trim();
 
       if (isRagu) {

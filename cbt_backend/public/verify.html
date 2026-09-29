@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifikasi Keaslian Sertifikat Digital CBT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1e3a8a;
+      --success: #10b981;
+      --danger: #ef4444;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 16px;
+      --shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+    .brand-icon {
+      font-size: 24px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .brand-text h1 { font-size: 16px; font-weight: 800; color: var(--primary-dark); }
+    .brand-text p { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+    .hero-banner {
+      background: radial-gradient(circle at top right, #1e3a8a 0%, #0f172a 100%);
+      color: white;
+      text-align: center;
+      padding: 40px 20px 70px 20px;
+    }
+    .hero-banner h2 { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+    .hero-banner p { font-size: 14px; color: #94a3b8; max-width: 540px; margin: 0 auto; }
+    .main-wrapper {
+      max-width: 680px;
+      width: 100%;
+      margin: -40px auto 40px auto;
+      padding: 0 16px;
+      flex: 1;
+    }
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      padding: 28px 24px;
+    }
+    .search-box {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .search-box input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: monospace;
+      font-weight: 600;
+      text-transform: uppercase;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .search-box input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+    .search-box button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 22px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .search-box button:hover { background: #1d4ed8; }
+    
+    /* Result states */
+    .status-panel {
+      border-radius: 14px;
+      padding: 24px 20px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .status-panel.valid {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      color: #14532d;
+    }
+    .status-panel.invalid {
+      background: #fef2f2;
+      border: 1.5px solid #fca5a5;
+      color: #7f1d1d;
+    }
+    .status-icon {
+      font-size: 44px;
+      margin-bottom: 8px;
+    }
+    .status-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .status-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    
+    .cert-details-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+    .cert-details-table tr {
+      border-bottom: 1px solid var(--border);
+    }
+    .cert-details-table td {
+      padding: 10px 4px;
+      vertical-align: top;
+    }
+    .td-label {
+      color: var(--text-muted);
+      width: 160px;
+      font-size: 13px;
+    }
+    .td-val {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .badge-success { background: #dcfce7; color: #15803d; }
+    .badge-info { background: #e0f2fe; color: #0369a1; }
+    
+    .action-btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 24px;
+    }
+    .btn-block {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      font-size: 14px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-print { background: var(--primary); color: white; }
+    .btn-print:hover { background: #1d4ed8; }
+    
+    .loading-box {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+    .spinner {
+      border: 3px solid rgba(0,0,0,0.1);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border-left-color: var(--primary);
+      animation: spin 1s linear infinite;
+      margin: 0 auto 12px auto;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    footer {
+      background: white;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/" class="brand">
+      <div class="brand-icon">🎓</div>
+      <div class="brand-text">
+        <h1>PORTAL CBT RESMI</h1>
+        <p>Verifikasi Integritas & Keaslian Dokumen</p>
+      </div>
+    </a>
+    <a href="/" style="font-size: 13px; font-weight: 600; color: var(--primary); text-decoration: none;">← Kembali ke Portal</a>
+  </header>
+
+  <div class="hero-banner">
+    <h2>Layanan Verifikasi Sertifikat CBT</h2>
+    <p>Validasi nomor seri sertifikat digital secara instan untuk memastikan kelulusan dan keabsahan nilai hasil ujian siswa.</p>
+  </div>
+
+  <div class="main-wrapper">
+    <div class="card">
+      <div class="search-box">
+        <input type="text" id="cert-input" placeholder="Masukkan Nomor Seri (Contoh: CERT/CBT/2026/000001)">
+        <button onclick="doVerify()">🔍 Verifikasi</button>
+      </div>
+
+      <!-- State Containers -->
+      <div id="state-loading" style="display:none;" class="loading-box">
+        <div class="spinner"></div>
+        <p>Memverifikasi keaslian sertifikat pada pangkalan data...</p>
+      </div>
+
+      <div id="state-result" style="display:none;"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 CBT Examination System. Seluruh hak cipta dilindungi undang-undang.</p>
+    <p style="font-size:11px; margin-top:4px;">Dokumen ini dilindungi kriptografi validasi integritas QR Code Resmi.</p>
+  </footer>
+
+  <script>
+    async function doVerify(customNumber) {
+      const input = document.getElementById('cert-input');
+      const certNo = (customNumber || input.value || '').trim();
+      if (!certNo) {
+        alert('Silakan masukkan nomor sertifikat terlebih dahulu.');
+        return;
+      }
+      input.value = certNo;
+
+      const loadingEl = document.getElementById('state-loading');
+      const resultEl = document.getElementById('state-result');
+
+      loadingEl.style.display = 'block';
+      resultEl.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/sertifikat/verify/' + encodeURIComponent(certNo));
+        const json = await res.json();
+        loadingEl.style.display = 'none';
+        resultEl.style.display = 'block';
+
+        if (res.ok && json.data && json.data.valid) {
+          renderValidCertificate(json.data);
+        } else {
+          renderInvalidCertificate(certNo, json.data ? json.data.message : 'Sertifikat tidak ditemukan.');
+        }
+      } catch (err) {
+        loadingEl.style.display = 'none';
+        resultEl.style.display = 'block';
+        renderInvalidCertificate(certNo, 'Gagal menghubungi server: ' + err.message);
+      }
+    }
+
+    function renderValidCertificate(data) {
+      const issueDate = new Date(data.issued_at).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+
+      const printUrl = '/sertifikat/print/' + encodeURIComponent(data.certificate_number);
+
+      document.getElementById('state-result').innerHTML = `
+        <div class="status-panel valid">
+          <div class="status-icon">🛡️</div>
+          <div class="status-title">SERTIFIKAT RESMI & SAH</div>
+          <div class="status-desc">Dokumen ini terdaftar secara valid dalam pangkalan data CBT.</div>
+        </div>
+
+        <table class="cert-details-table">
+          <tr>
+            <td class="td-label">Nomor Seri Sertifikat</td>
+            <td class="td-val" style="font-family:monospace; color:var(--primary); font-size:15px;">${data.certificate_number}</td>
+          </tr>
+          <tr>
+            <td class="td-label">Nama Siswa</td>
+            <td class="td-val" style="font-size:16px;">${data.nama_siswa.toUpperCase()}</td>
+          </tr>
+          <tr>
+            <td class="td-label">NIS (Disamarkan)</td>
+            <td class="td-val">${data.nis_masked}</td>
+          </tr>
+          <tr>
+            <td class="td-label">Kelas</td>
+            <td class="td-val">${data.kelas}</td>
+          </tr>
+          <tr>
+            <td class="td-label">Mata Pelajaran</td>
+            <td class="td-val">${data.nama_mapel}</td>
+          </tr>
+          <tr>
+            <td class="td-label">Sesi Ujian</td>
+            <td class="td-val">${data.nama_ujian}</td>
+          </tr>
+          <tr>
+            <td class="td-label">Nilai Akhir</td>
+            <td class="td-val"><span style="color:#047857; font-size:16px; font-weight:800;">${data.nilai_akhir}</span> <span style="font-size:12px; color:var(--text-muted);">(Standar KKM: ${data.kkm})</span></td>
+          </tr>
+          <tr>
+            <td class="td-label">Status Kelulusan</td>
+            <td class="td-val"><span class="badge badge-success">✓ ${data.status_kelulusan}</span></td>
+          </tr>
+          <tr>
+            <td class="td-label">Tanggal Diterbitkan</td>
+            <td class="td-val">${issueDate}</td>
+          </tr>
+          <tr>
+            <td class="td-label">Audit Verifikasi</td>
+            <td class="td-val" style="font-size:12px; color:var(--text-muted);">
+              Telah diverifikasi publik sebanyak <strong>${data.total_verifications} kali</strong>
+            </td>
+          </tr>
+        </table>
+
+        <div class="action-btn-row">
+          <a href="${printUrl}" target="_blank" class="btn-block btn-print">🖨️ Cetak / Buka Sertifikat Digital</a>
+        </div>
+      `;
+    }
+
+    function renderInvalidCertificate(certNo, msg) {
+      document.getElementById('state-result').innerHTML = `
+        <div class="status-panel invalid">
+          <div class="status-icon">⚠️</div>
+          <div class="status-title">SERTIFIKAT TIDAK TERVERIFIKASI</div>
+          <div class="status-desc">${msg}</div>
+        </div>
+        <p style="font-size:13px; color:var(--text-muted); line-height:1.6; text-align:center;">
+          Nomor seri <code>${certNo}</code> tidak ditemukan dalam sistem resmi kami. Pastikan nomor yang dimasukkan tepat sesuai dengan yang tercetak pada sertifikat fisik atau pindai ulang QR Code pada dokumen.
+        </p>
+      `;
+    }
+
+    // Auto verify from ?cert= query parameter
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const certParam = urlParams.get('cert');
+      if (certParam) {
+        document.getElementById('cert-input').value = certParam;
+        doVerify(certParam);
+      }
+    });
+  </script>
+</body>
+</html>

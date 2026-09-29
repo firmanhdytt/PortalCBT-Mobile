@@ -1,3 +1,4 @@
+import '../../core/utils/type_parser.dart';
 import '../../domain/entities/student.dart';
 
 class StudentModel extends Student {
@@ -12,11 +13,11 @@ class StudentModel extends Student {
 
   factory StudentModel.fromJson(Map<String, dynamic> json) {
     return StudentModel(
-      id: json['id'] as int,
-      userId: json['user_id'] as int?,
-      nis: json['nis'].toString(),
-      nama: json['nama'].toString(),
-      kelasId: json['kelas_id'] as int,
+      id: TypeParser.parseIntOr(json['id'], 0),
+      userId: TypeParser.parseInt(json['user_id']),
+      nis: json['nis']?.toString() ?? '',
+      nama: json['nama']?.toString() ?? '',
+      kelasId: TypeParser.parseIntOr(json['kelas_id'], 0),
       namaKelas: (json['nama_kelas'] ?? '-').toString(),
     );
   }
@@ -34,12 +35,12 @@ class StudentModel extends Student {
 
   factory StudentModel.fromDb(Map<String, dynamic> map) {
     return StudentModel(
-      id: map['id'] as int,
-      userId: map['user_id'] as int?,
-      nis: map['nis'].toString(),
-      nama: map['nama'].toString(),
-      kelasId: map['kelas_id'] as int,
-      namaKelas: map['nama_kelas'].toString(),
+      id: TypeParser.parseIntOr(map['id'], 0),
+      userId: TypeParser.parseInt(map['user_id']),
+      nis: map['nis']?.toString() ?? '',
+      nama: map['nama']?.toString() ?? '',
+      kelasId: TypeParser.parseIntOr(map['kelas_id'], 0),
+      namaKelas: map['nama_kelas']?.toString() ?? '',
     );
   }
 

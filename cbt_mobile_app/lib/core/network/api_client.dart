@@ -100,4 +100,44 @@ class ApiClient {
       throw NetworkException(message: 'Terjadi kesalahan jaringan: $e');
     }
   }
+
+  Future<dynamic> put(String endpoint, {Map<String, dynamic>? data}) async {
+    try {
+      final uri = Uri.parse('$baseUrl$endpoint');
+      final res = await _client
+          .put(
+            uri,
+            headers: _buildHeaders(isJson: true),
+            body: data != null ? jsonEncode(data) : null,
+          )
+          .timeout(timeoutDuration);
+      return _processResponse(res);
+    } on SocketException catch (e) {
+      throw NetworkException(message: 'Koneksi gagal: ${e.message}');
+    } on TimeoutException {
+      throw const NetworkException(message: 'Waktu koneksi habis (timeout). Periksa IP server.');
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw NetworkException(message: 'Terjadi kesalahan jaringan: $e');
+    }
+  }
+
+  Future<dynamic> delete(String endpoint) async {
+    try {
+      final uri = Uri.parse('$baseUrl$endpoint');
+      final res = await _client
+          .delete(uri, headers: _buildHeaders(isJson: false))
+          .timeout(timeoutDuration);
+      return _processResponse(res);
+    } on SocketException catch (e) {
+      throw NetworkException(message: 'Koneksi gagal: ${e.message}');
+    } on TimeoutException {
+      throw const NetworkException(message: 'Waktu koneksi habis (timeout). Periksa IP server.');
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw NetworkException(message: 'Terjadi kesalahan jaringan: $e');
+    }
+  }
 }

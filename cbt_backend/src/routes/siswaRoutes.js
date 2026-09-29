@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const studentExamController = require('../controllers/studentExamController');
 const proctoringController = require('../controllers/proctoringController');
+const certificateController = require('../controllers/certificateController');
 const { authenticate, requireRole } = require('../middlewares/authMiddleware');
 const { validateBody, validateParams } = require('../middlewares/validator');
 
@@ -86,6 +87,23 @@ router.get(
   '/ujian/unlock-status/:ujianId/:siswaId',
   validateParams({ ujianId: { required: true }, siswaId: { required: true } }),
   (req, res, next) => proctoringController.getUnlockStatus(req, res, next)
+);
+
+// --- SERTIFIKAT KELULUSAN SISWA ---
+router.get(
+  '/sertifikat',
+  (req, res, next) => certificateController.getStudentCertificates(req, res, next)
+);
+
+// --- KARTU TANDA PESERTA UJIAN SISWA ---
+router.get(
+  '/kartu-ujian',
+  (req, res, next) => certificateController.getStudentCard(req, res, next)
+);
+
+router.get(
+  '/kartu-ujian/print',
+  (req, res, next) => certificateController.printStudentCardHtml(req, res, next)
 );
 
 module.exports = router;

@@ -908,6 +908,183 @@
         width: 100%;
       }
     }
+
+    /* ==============================================
+       6. THEME SYSTEM, ACCESSIBILITY & NOTIFICATIONS (PHASE 10)
+       ============================================== */
+    [data-theme="dark"] {
+      --primary: #3B82F6;
+      --primary-hover: #60A5FA;
+      --bg: #0B1120;
+      --card-bg: #1E293B;
+      --text: #F1F5F9;
+      --text-light: #94A3B8;
+      --border: #334155;
+      --input-bg: #0F172A;
+      --shadow: 0 10px 25px -5px rgba(0,0,0,0.5), 0 4px 6px -2px rgba(0,0,0,0.3);
+    }
+
+    [data-theme="dark"] body {
+      background-color: #0B1120;
+      color: #F1F5F9;
+    }
+
+    [data-theme="dark"] .card,
+    [data-theme="dark"] .modal-content,
+    [data-theme="dark"] .siswa-header,
+    [data-theme="dark"] .mobile-header-bar,
+    [data-theme="dark"] .siswa-exam-bar,
+    [data-theme="dark"] .siswa-grid-content,
+    [data-theme="dark"] .notif-dropdown-menu {
+      background-color: #1E293B !important;
+      color: #F1F5F9 !important;
+      border-color: #334155 !important;
+    }
+
+    [data-theme="dark"] #siswa-container {
+      background-color: #0B1120 !important;
+    }
+
+    [data-theme="dark"] .siswa-question-card,
+    [data-theme="dark"] .siswa-opt-btn,
+    [data-theme="dark"] .option-row {
+      background-color: #1E293B !important;
+      color: #F1F5F9 !important;
+      border-color: #334155 !important;
+    }
+
+    [data-theme="dark"] .form-control,
+    [data-theme="dark"] input,
+    [data-theme="dark"] select,
+    [data-theme="dark"] textarea {
+      background-color: #0F172A !important;
+      color: #F1F5F9 !important;
+      border-color: #334155 !important;
+    }
+
+    [data-theme="dark"] .table-container table,
+    [data-theme="dark"] th,
+    [data-theme="dark"] td {
+      border-color: #334155 !important;
+      color: #F1F5F9 !important;
+    }
+
+    [data-theme="dark"] th {
+      background-color: #1E293B !important;
+    }
+
+    [data-theme="dark"] .btn-secondary {
+      background-color: #334155 !important;
+      color: #F1F5F9 !important;
+      border-color: #475569 !important;
+    }
+
+    [data-theme="dark"] .btn-secondary:hover {
+      background-color: #475569 !important;
+    }
+
+    [data-theme="dark"] .header-main h1 {
+      color: #F1F5F9 !important;
+    }
+
+    [data-contrast="high"] {
+      --border: #000000;
+      font-weight: 500;
+    }
+    [data-contrast="high"] * {
+      border-color: #000000 !important;
+    }
+
+    [data-theme="dark"][data-contrast="high"] {
+      --bg: #000000;
+      --card-bg: #0B0F17;
+      --text: #FFFFFF;
+      --border: #FFFFFF;
+    }
+    [data-theme="dark"][data-contrast="high"] * {
+      border-color: #FFFFFF !important;
+    }
+
+    /* Notification Items */
+    .notif-dropdown-menu {
+      animation: slideDown 0.2s ease-out;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .notif-item {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .notif-item:hover {
+      background-color: rgba(37, 99, 235, 0.08);
+    }
+    .notif-item.unread {
+      background-color: rgba(37, 99, 235, 0.06);
+      border-left: 3px solid var(--primary);
+    }
+    .notif-item-title {
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .notif-item-time {
+      font-size: 10px;
+      color: var(--text-light);
+    }
+    .notif-item-msg {
+      font-size: 11px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    /* Font Scale Classes on Exam Area */
+    .font-scale-normal {
+      font-size: 15px !important;
+      line-height: 1.6 !important;
+    }
+    .font-scale-medium {
+      font-size: 18px !important;
+      line-height: 1.7 !important;
+    }
+    .font-scale-large {
+      font-size: 21px !important;
+      line-height: 1.8 !important;
+    }
+    .font-scale-normal .siswa-opt-btn, .font-scale-normal textarea {
+      font-size: 15px !important;
+    }
+    .font-scale-medium .siswa-opt-btn, .font-scale-medium textarea {
+      font-size: 18px !important;
+    }
+    .font-scale-large .siswa-opt-btn, .font-scale-large textarea {
+      font-size: 21px !important;
+    }
+
+    .btn-zoom {
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 3px 8px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: var(--transition);
+    }
+    .btn-zoom:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
   </style>
 </head>
 <body>
@@ -963,24 +1140,36 @@
       </div>
       <ul class="sidebar-menu">
         <!-- Menu Guru -->
-        <li class="menu-item active menu-guru" id="menu-db-guru"><a href="#" onclick="showPage('db-guru')">Dashboard Guru</a></li>
-        <li class="menu-item menu-guru" id="menu-soal"><a href="#" onclick="showPage('soal')">Kelola Bank Soal</a></li>
-        <li class="menu-item menu-guru" id="menu-ujian"><a href="#" onclick="showPage('ujian')">Atur Sesi Ujian</a></li>
-        <li class="menu-item menu-guru" id="menu-monitoring"><a href="#" onclick="showPage('monitoring')">Monitoring Live</a></li>
-        <li class="menu-item menu-guru" id="menu-grading"><a href="#" onclick="showPage('grading')">Koreksi Essay</a></li>
-        <li class="menu-item menu-guru" id="menu-rekap"><a href="#" onclick="showPage('rekap')">Rekap & Analisis</a></li>
+        <li class="menu-item active menu-guru" id="menu-db-guru"><a href="#" onclick="showPage('db-guru')">📊 Dashboard Guru</a></li>
+        <li class="menu-item menu-guru" id="menu-workspace-guru"><a href="#" onclick="showPage('workspace-guru')">🧭 Workspace Saya</a></li>
+        <li class="menu-item menu-guru" id="menu-soal"><a href="#" onclick="showPage('soal')">📝 Kelola Bank Soal</a></li>
+        <li class="menu-item menu-guru" id="menu-ujian"><a href="#" onclick="showPage('ujian')">🚀 Sesi Ujian</a></li>
+        <li class="menu-item menu-guru" id="menu-monitoring"><a href="#" onclick="showPage('monitoring')">📡 Monitoring Live</a></li>
+        <li class="menu-item menu-guru" id="menu-grading"><a href="#" onclick="showPage('grading')">✍️ Koreksi Essay</a></li>
+        <li class="menu-item menu-guru" id="menu-rekap"><a href="#" onclick="showPage('rekap')">📊 Rekap & Analisis</a></li>
         
         <!-- Menu Admin -->
-        <li class="menu-item active menu-admin" id="menu-db-admin"><a href="#" onclick="showPage('db-admin')">Dashboard Admin</a></li>
-        <li class="menu-item menu-admin" id="menu-master-siswa"><a href="#" onclick="showPage('master-siswa')">Data Siswa</a></li>
-        <li class="menu-item menu-admin" id="menu-master-kelas"><a href="#" onclick="showPage('master-kelas')">Data Kelas</a></li>
-        <li class="menu-item menu-admin" id="menu-master-mapel"><a href="#" onclick="showPage('master-mapel')">Data Mapel</a></li>
+        <li class="menu-item active menu-admin" id="menu-db-admin"><a href="#" onclick="showPage('db-admin')">📊 Dashboard Admin</a></li>
+        <li class="menu-item menu-admin" id="menu-master-guru"><a href="#" onclick="showPage('master-guru')">👨‍🏫 Data Guru & Penempatan</a></li>
+        <li class="menu-item menu-admin" id="menu-master-siswa"><a href="#" onclick="showPage('master-siswa')">👨‍🎓 Data Siswa</a></li>
+        <li class="menu-item menu-admin" id="menu-master-kelas"><a href="#" onclick="showPage('master-kelas')">🏫 Data Kelas</a></li>
+        <li class="menu-item menu-admin" id="menu-master-mapel"><a href="#" onclick="showPage('master-mapel')">📖 Data Mapel</a></li>
       </ul>
       
       <div class="user-info-sidebar">
-        <p id="user-display-name">Nama User</p>
-        <span id="user-display-sub">NIP / Jabatan</span>
-        <button class="btn btn-danger btn-block" onclick="handleLogout()">Logout</button>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <div id="sidebar-avatar-container" onclick="openUserProfileModal()" style="width:42px; height:42px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; overflow:hidden; border:2px solid rgba(255,255,255,0.3); cursor:pointer; flex-shrink:0;" title="Klik untuk kelola profil">
+            <span id="sidebar-avatar-initial">U</span>
+          </div>
+          <div style="flex:1; overflow:hidden;">
+            <p id="user-display-name" style="white-space:nowrap; text-overflow:ellipsis; overflow:hidden; font-weight:700;">Nama User</p>
+            <span id="user-display-sub">NIP / Jabatan</span>
+          </div>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:8px;">
+          <button class="btn btn-secondary btn-block" style="padding:6px; font-size:12px;" onclick="openUserProfileModal()">⚙️ Profil</button>
+          <button class="btn btn-danger btn-block" style="padding:6px; font-size:12px;" onclick="handleLogout()">Logout</button>
+        </div>
       </div>
     </nav>
 
@@ -991,6 +1180,34 @@
         <button class="menu-toggle-btn" onclick="toggleSidebar(true)">☰</button>
         <strong style="font-size:15px; color:var(--primary);">CBT Portal</strong>
         <span></span>
+      </div>
+
+      <!-- Universal Top Bar for Guru/Admin: Notification, Theme, High Contrast (Phase 10) -->
+      <div class="topbar-controls" style="display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
+        <div class="theme-toggle-group" style="display:inline-flex; align-items:center; gap:8px;">
+          <label style="font-size:12px; color:var(--text-light); margin:0;">Tema:</label>
+          <select id="app-theme-select" onchange="setUserTheme(this.value)" class="form-control" style="padding:5px 10px; font-size:12px; height:auto; width:auto; border-radius:8px;">
+            <option value="light">☀️ Terang</option>
+            <option value="dark">🌙 Gelap</option>
+            <option value="system">💻 Sistem</option>
+          </select>
+          <button type="button" class="btn btn-secondary" onclick="toggleHighContrast()" id="btn-high-contrast-app" title="Mode Kontras Tinggi" style="padding:5px 10px; font-size:12px; border-radius:8px;">👁️ Kontras</button>
+        </div>
+        <!-- Notification Dropdown -->
+        <div style="position:relative;">
+          <button class="btn btn-secondary" onclick="toggleNotificationDropdown('app')" style="padding:6px 12px; font-size:14px; position:relative; border-radius:8px;" title="Pusat Notifikasi">
+            🔔 <span id="app-notif-badge" class="badge badge-danger" style="display:none; position:absolute; top:-6px; right:-6px; font-size:10px; padding:2px 6px; border-radius:10px;">0</span>
+          </button>
+          <div id="app-notif-dropdown" class="notif-dropdown-menu" style="display:none; position:absolute; right:0; top:42px; width:340px; background:var(--card-bg); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); z-index:200; overflow:hidden;">
+            <div style="padding:10px 14px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-size:13px;">Pusat Notifikasi</strong>
+              <button onclick="markAllNotificationsAsRead()" style="background:none; border:none; color:var(--primary); font-size:11px; cursor:pointer; font-weight:600;">Tandai Semua Dibaca</button>
+            </div>
+            <div id="app-notif-list" style="max-height:300px; overflow-y:auto; padding:0;">
+              <div style="text-align:center; padding:15px; font-size:12px; color:var(--text-light);">Tidak ada notifikasi baru</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- PAGE: DASHBOARD GURU -->
@@ -1188,6 +1405,7 @@
           <h1>Rekapitulasi Nilai & Analisis Kelas</h1>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <button class="btn btn-secondary" onclick="openItemAnalysisModal()">📊 Analisis Butir Soal</button>
+            <button class="btn btn-primary" onclick="issueAllPassedCertificates()">📜 Terbitkan Sertifikat Semua Lulus</button>
             <button class="btn btn-success" onclick="exportRecapCSV()">📥 Unduh Rekap (CSV)</button>
           </div>
         </div>
@@ -1239,10 +1457,11 @@
                   <th>Nilai Essay</th>
                   <th>Nilai Akhir</th>
                   <th>Status</th>
+                  <th style="text-align:center;">Sertifikat</th>
                 </tr>
               </thead>
               <tbody id="rekap-table-body">
-                <tr><td colspan="9" style="text-align:center; padding:25px; color:var(--text-light);">Silakan pilih sesi ujian untuk melihat rekapitulasi nilai.</td></tr>
+                <tr><td colspan="10" style="text-align:center; padding:25px; color:var(--text-light);">Silakan pilih sesi ujian untuk melihat rekapitulasi nilai.</td></tr>
               </tbody>
             </table>
           </div>
@@ -1251,26 +1470,91 @@
 
       <!-- PAGE: DASHBOARD ADMIN -->
       <div id="page-db-admin" class="page-view">
-        <div class="welcome-banner" style="background: linear-gradient(135deg, #0F172A 0%, #334155 100%);">
+        <div class="welcome-banner" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border-left: 6px solid var(--primary);">
           <div>
-            <h2>Panel Administrator CBT 🛡️</h2>
-            <p>Kelola data master pengguna, kelas, serta mata pelajaran institusi.</p>
+            <h2 id="admin-greeting-title">Panel Utama Administrator CBT 🛡️</h2>
+            <p>Kelola data master pengajar, peserta didik, struktur kelas, dan kurikulum mata pelajaran.</p>
           </div>
           <div class="quick-actions-bar">
+            <button class="btn-banner-action" onclick="showPage('master-guru')">👨‍🏫 Data Guru</button>
             <button class="btn-banner-action" onclick="showPage('master-siswa')">👨‍🎓 Data Siswa</button>
             <button class="btn-banner-action" onclick="showPage('master-kelas')">🏫 Data Kelas</button>
             <button class="btn-banner-action" onclick="showPage('master-mapel')">📖 Data Mapel</button>
           </div>
         </div>
 
+        <!-- 4 Metric Cards -->
         <div class="grid-stats">
-          <div class="stat-card" style="border-left: 4px solid var(--primary);">
+          <div class="stat-card" style="border-left: 4px solid var(--primary); cursor:pointer;" onclick="showPage('master-siswa')">
             <span>Total Siswa Terdaftar</span>
             <h2 id="admin-stat-siswa">0</h2>
+            <small style="font-size:11px; color:var(--primary); font-weight:600;">Lihat semua siswa ➔</small>
           </div>
-          <div class="stat-card" style="border-left: 4px solid var(--success);">
-            <span>Total Kelas Terdaftar</span>
+          <div class="stat-card" style="border-left: 4px solid var(--info); cursor:pointer;" onclick="showPage('master-guru')">
+            <span>Total Guru Pengajar</span>
+            <h2 id="admin-stat-guru">0</h2>
+            <small style="font-size:11px; color:var(--info); font-weight:600;">Lihat semua guru ➔</small>
+          </div>
+          <div class="stat-card" style="border-left: 4px solid var(--success); cursor:pointer;" onclick="showPage('master-kelas')">
+            <span>Total Kelas Aktif</span>
             <h2 id="admin-stat-kelas">0</h2>
+            <small style="font-size:11px; color:var(--success); font-weight:600;">Lihat semua kelas ➔</small>
+          </div>
+          <div class="stat-card" style="border-left: 4px solid var(--warning); cursor:pointer;" onclick="showPage('master-mapel')">
+            <span>Total Mata Pelajaran</span>
+            <h2 id="admin-stat-mapel">0</h2>
+            <small style="font-size:11px; color:var(--warning); font-weight:600;">Lihat semua mapel ➔</small>
+          </div>
+        </div>
+
+        <!-- Dashboard Overview Grid -->
+        <div class="form-row" style="margin-top:20px;">
+          <div class="form-col" style="flex:1;">
+            <div class="card">
+              <div class="card-title-bar">
+                <h3>Ringkasan Kelas & Anggota</h3>
+                <button class="btn btn-secondary" style="font-size:11px; padding:4px 10px;" onclick="showPage('master-kelas')">+ Kelola Kelas</button>
+              </div>
+              <div class="table-container" style="max-height: 280px; overflow-y:auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nama Kelas</th>
+                      <th>Siswa</th>
+                      <th>Mapel</th>
+                      <th>Guru</th>
+                      <th style="text-align:center;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-dashboard-kelas-body">
+                    <tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-light);">Memuat data kelas...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="form-col" style="flex:1;">
+            <div class="card">
+              <div class="card-title-bar">
+                <h3>Guru & Penempatan Workspace</h3>
+                <button class="btn btn-secondary" style="font-size:11px; padding:4px 10px;" onclick="showPage('master-guru')">+ Kelola Guru</button>
+              </div>
+              <div class="table-container" style="max-height: 280px; overflow-y:auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>NIP</th>
+                      <th>Nama Guru</th>
+                      <th>Penempatan Workspace</th>
+                      <th style="text-align:center;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-dashboard-guru-body">
+                    <tr><td colspan="4" style="text-align:center; padding:15px; color:var(--text-light);">Memuat data guru...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1281,17 +1565,20 @@
           <h1>Data Siswa</h1>
         </div>
         <div class="card">
+          <div class="card-title-bar">
+            <h3>Tambah Siswa Baru</h3>
+          </div>
           <div class="form-row">
             <div class="form-col">
               <label class="form-group label">NIS</label>
-              <input type="text" id="siswa-nis" class="form-control">
+              <input type="text" id="siswa-nis" class="form-control" placeholder="Contoh: 2026001">
             </div>
             <div class="form-col">
               <label class="form-group label">Nama Lengkap</label>
-              <input type="text" id="siswa-nama" class="form-control">
+              <input type="text" id="siswa-nama" class="form-control" placeholder="Nama Siswa">
             </div>
             <div class="form-col">
-              <label class="form-group label">Kelas</label>
+              <label class="form-group label">Kelas Target</label>
               <select id="siswa-kelas" class="form-control"></select>
             </div>
             <div class="form-col">
@@ -1299,17 +1586,22 @@
               <input type="password" id="siswa-password" class="form-control" placeholder="Default: NIS">
             </div>
           </div>
-          <button class="btn btn-primary" onclick="handleAddSiswa()" style="margin-top: 15px;">Simpan Siswa</button>
+          <button class="btn btn-primary" onclick="handleAddSiswa()" style="margin-top: 10px;">+ Simpan Data Siswa</button>
         </div>
         <div class="card">
+          <div class="card-title-bar">
+            <h3>Daftar Siswa Terdaftar</h3>
+          </div>
           <div class="table-container">
             <table>
               <thead>
                 <tr>
+                  <th style="width: 50px;">ID</th>
                   <th>NIS</th>
                   <th>Nama Lengkap</th>
                   <th>Kelas</th>
-                  <th>Aksi</th>
+                  <th>Status Akun</th>
+                  <th style="width: 180px; text-align:center;">Aksi</th>
                 </tr>
               </thead>
               <tbody id="student-list-table-body"></tbody>
@@ -1326,21 +1618,29 @@
         <div class="form-row">
           <div class="form-col">
             <div class="card">
+              <div class="card-title-bar">
+                <h3>Tambah Kelas</h3>
+              </div>
               <div class="form-group">
                 <label class="form-group label">Nama Kelas</label>
-                <input type="text" id="kelas-nama" class="form-control">
+                <input type="text" id="kelas-nama" class="form-control" placeholder="Contoh: XII RPL 1">
               </div>
-              <button class="btn btn-primary btn-block" onclick="handleAddKelas()">Simpan</button>
+              <button class="btn btn-primary btn-block" onclick="handleAddKelas()">+ Simpan Kelas</button>
             </div>
           </div>
           <div class="form-col" style="flex: 2;">
             <div class="card">
+              <div class="card-title-bar">
+                <h3>Daftar Kelas</h3>
+              </div>
               <div class="table-container">
                 <table>
                   <thead>
                     <tr>
-                      <th>ID Kelas</th>
+                      <th style="width: 60px;">ID</th>
                       <th>Nama Kelas</th>
+                      <th>Total Siswa</th>
+                      <th style="width: 200px; text-align:center;">Aksi</th>
                     </tr>
                   </thead>
                   <tbody id="class-list-table-body"></tbody>
@@ -1359,25 +1659,33 @@
         <div class="form-row">
           <div class="form-col">
             <div class="card">
+              <div class="card-title-bar">
+                <h3>Tambah Mapel</h3>
+              </div>
               <div class="form-group">
                 <label class="form-group label">Kode Mapel</label>
-                <input type="text" id="mapel-kode" class="form-control">
+                <input type="text" id="mapel-kode" class="form-control" placeholder="Contoh: MTK-12">
               </div>
               <div class="form-group">
                 <label class="form-group label">Nama Mapel</label>
-                <input type="text" id="mapel-nama" class="form-control">
+                <input type="text" id="mapel-nama" class="form-control" placeholder="Contoh: Matematika">
               </div>
-              <button class="btn btn-primary btn-block" onclick="handleAddMapel()">Simpan</button>
+              <button class="btn btn-primary btn-block" onclick="handleAddMapel()">+ Simpan Mapel</button>
             </div>
           </div>
           <div class="form-col" style="flex: 2;">
             <div class="card">
+              <div class="card-title-bar">
+                <h3>Daftar Mata Pelajaran</h3>
+              </div>
               <div class="table-container">
                 <table>
                   <thead>
                     <tr>
+                      <th style="width: 60px;">ID</th>
                       <th>Kode</th>
                       <th>Mata Pelajaran</th>
+                      <th style="width: 180px; text-align:center;">Aksi</th>
                     </tr>
                   </thead>
                   <tbody id="mapel-list-table-body"></tbody>
@@ -1388,23 +1696,124 @@
         </div>
       </div>
 
-    </div>
+      <!-- PAGE: WORKSPACE GURU -->
+      <div id="page-workspace-guru" class="page-view">
+        <div class="header-main">
+          <h1>Workspace Saya</h1>
+        </div>
+        <div class="card">
+          <div class="card-title-bar">
+            <h3>Tanggung Jawab Kelas & Mata Pelajaran</h3>
+          </div>
+          <p style="font-size:13px; color:var(--text-light); margin-bottom:20px;">
+            Berikut adalah daftar kelas dan mata pelajaran yang ditugaskan oleh Administrator kepada Anda. Seluruh bank soal, sesi ujian, dan koreksi essay Anda terbatas pada workspace ini.
+          </p>
+          <div id="guru-workspace-cards-container" class="grid-stats" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));"></div>
+        </div>
+      </div>
+
+      <!-- PAGE: MASTER GURU & PENEMPATAN -->
+      <div id="page-master-guru" class="page-view">
+        <div class="header-main">
+          <h1>Data Guru & Penempatan Workspace</h1>
+        </div>
+        <div class="card">
+          <div class="card-title-bar">
+            <h3>Tambah Guru Baru</h3>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-group label">NIP / Username</label>
+              <input type="text" id="guru-nip" class="form-control" placeholder="Contoh: 19850101...">
+            </div>
+            <div class="form-col">
+              <label class="form-group label">Nama Lengkap</label>
+              <input type="text" id="guru-nama" class="form-control" placeholder="Nama Guru beserta gelar">
+            </div>
+            <div class="form-col">
+              <label class="form-group label">Email (Opsional)</label>
+              <input type="email" id="guru-email" class="form-control" placeholder="guru@sekolah.sch.id">
+            </div>
+            <div class="form-col">
+              <label class="form-group label">Password</label>
+              <input type="password" id="guru-password" class="form-control" placeholder="Default: NIP">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="handleAddGuru()" style="margin-top: 10px;">+ Simpan Data Guru</button>
+        </div>
+        <div class="card">
+          <div class="card-title-bar">
+            <h3>Daftar Guru & Penempatan Kelas/Mapel</h3>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 50px;">ID</th>
+                  <th>NIP</th>
+                  <th>Nama Guru</th>
+                  <th>Email</th>
+                  <th>Penempatan Kelas & Mata Pelajaran</th>
+                  <th style="width: 220px; text-align:center;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="guru-list-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
   </div>
 
   <!-- C. CONTAINER UTAMA SISWA (DEDICATED PORTAL) -->
   <div id="siswa-container">
-    <div class="siswa-header">
+    <div class="siswa-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <h2>PORTAL UJIAN SISWA</h2>
-      <button class="btn btn-danger" onclick="handleLogout()" style="padding: 6px 12px; font-size:12px;">Logout</button>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <!-- Theme & High Contrast (Phase 10) -->
+        <select id="siswa-theme-select" onchange="setUserTheme(this.value)" class="form-control" style="padding:4px 8px; font-size:12px; height:auto; width:auto; border-radius:8px;">
+          <option value="light">☀️ Terang</option>
+          <option value="dark">🌙 Gelap</option>
+          <option value="system">💻 Sistem</option>
+        </select>
+        <button type="button" class="btn btn-secondary" onclick="toggleHighContrast()" id="btn-high-contrast-siswa" title="Kontras Tinggi" style="padding:4px 8px; font-size:12px; border-radius:8px;">👁️</button>
+        <!-- Notification Dropdown -->
+        <div style="position:relative;">
+          <button class="btn btn-secondary" onclick="toggleNotificationDropdown('siswa')" style="padding:5px 9px; font-size:13px; position:relative; border-radius:8px;" title="Pemberitahuan">
+            🔔 <span id="siswa-notif-badge" class="badge badge-danger" style="display:none; position:absolute; top:-6px; right:-6px; font-size:9px; padding:2px 5px; border-radius:10px;">0</span>
+          </button>
+          <div id="siswa-notif-dropdown" class="notif-dropdown-menu" style="display:none; position:absolute; right:0; top:38px; width:300px; background:var(--card-bg); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); z-index:200; overflow:hidden;">
+            <div style="padding:10px 14px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-size:13px;">Pemberitahuan</strong>
+              <button onclick="markAllNotificationsAsRead()" style="background:none; border:none; color:var(--primary); font-size:11px; cursor:pointer; font-weight:600;">Tandai Dibaca</button>
+            </div>
+            <div id="siswa-notif-list" style="max-height:260px; overflow-y:auto; padding:0;">
+              <div style="text-align:center; padding:15px; font-size:12px; color:var(--text-light);">Tidak ada notifikasi</div>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-danger" onclick="handleLogout()" style="padding: 6px 12px; font-size:12px; border-radius:8px;">Logout</button>
+      </div>
     </div>
 
     <div class="siswa-main-content">
       
       <!-- SISWA VIEW 1: DASHBOARD -->
       <div id="siswa-page-dashboard" class="siswa-page">
-        <div class="siswa-profile-banner">
-          <h3 id="siswa-name-display">Nama Siswa</h3>
-          <p id="siswa-nis-display">NIS: - | Kelas: -</p>
+        <div class="siswa-profile-banner" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div id="siswa-avatar-container" onclick="openUserProfileModal()" style="width:52px; height:52px; border-radius:50%; background:rgba(255,255,255,0.25); color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:20px; overflow:hidden; border:2px solid rgba(255,255,255,0.5); cursor:pointer; flex-shrink:0;" title="Klik untuk kelola profil & avatar">
+              <span id="siswa-avatar-initial">S</span>
+            </div>
+            <div>
+              <h3 id="siswa-name-display" style="margin:0;">Nama Siswa</h3>
+              <p id="siswa-nis-display" style="margin:4px 0 0 0; opacity:0.9;">NIS: - | Kelas: -</p>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:0; flex-wrap:wrap;">
+            <button class="btn btn-secondary" onclick="openUserProfileModal()" style="font-size:12px; padding:6px 14px;">⚙️ Profil & Password</button>
+            <button class="btn btn-secondary" onclick="openStudentCardModal()" style="font-size:12px; padding:6px 14px;">🪪 Kartu Ujian</button>
+            <button class="btn btn-primary" onclick="openStudentCertificatesModal()" style="font-size:12px; padding:6px 14px;">📜 Sertifikat</button>
+          </div>
         </div>
         <h4 style="font-size: 13px; margin-bottom: 12px; color: var(--text-light); text-transform: uppercase;">Daftar Ujian Tersedia</h4>
         <div id="siswa-ujian-list"></div>
@@ -1412,9 +1821,16 @@
 
       <!-- SISWA VIEW 2: PENGERJAAN SOAL -->
       <div id="siswa-page-exam" class="siswa-page" style="display:none; flex-direction:column; flex-grow:1;">
-        <div class="siswa-exam-bar">
+        <div class="siswa-exam-bar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
           <strong id="siswa-soal-no-display">Soal 1 dari 10</strong>
-          <span class="siswa-timer" id="siswa-timer-display">00:00</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="display:inline-flex; align-items:center; gap:3px;">
+              <button type="button" class="btn-zoom" onclick="changeExamFontSize(-1)" title="Perkecil Ukuran Teks">A-</button>
+              <button type="button" class="btn-zoom" onclick="resetExamFontSize()" title="Ukuran Normal">A</button>
+              <button type="button" class="btn-zoom" onclick="changeExamFontSize(1)" title="Perbesar Ukuran Teks">A+</button>
+            </div>
+            <span class="siswa-timer" id="siswa-timer-display">00:00</span>
+          </div>
         </div>
         <div style="flex-grow:1; display:flex; flex-direction:column; padding-top:15px;">
           <!-- Teks Pertanyaan -->
@@ -1477,6 +1893,10 @@
           </p>
         </div>
         
+        <div id="siswa-cert-action-box" style="display:none; margin-bottom:12px;">
+          <button class="btn btn-success btn-block" id="siswa-btn-cert" onclick="openStudentLatestCert()">📜 Cetak Sertifikat Kelulusan</button>
+        </div>
+        
         <button class="btn btn-primary btn-block" onclick="siswaGoHome()">Kembali Ke Beranda</button>
       </div>
 
@@ -1526,6 +1946,10 @@
       <div class="form-group" style="margin-top: 15px;">
         <label class="form-group label">Judul Paket Soal</label>
         <input type="text" id="modal-bank-judul" class="form-control" placeholder="Contoh: UTS Matematika Ganjil">
+      </div>
+      <div class="form-group">
+        <label class="form-group label">Kelas Target</label>
+        <select id="modal-bank-kelas" class="form-control"></select>
       </div>
       <div class="form-group">
         <label class="form-group label">Mata Pelajaran</label>
@@ -1633,6 +2057,346 @@
 
       <div class="modal-footer" style="margin-top:20px; display:flex; justify-content:flex-end;">
         <button class="btn btn-secondary" onclick="closeModal('item-analysis-modal')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: KARTU PESERTA UJIAN SISWA -->
+  <div id="modal-student-card" class="modal">
+    <div class="modal-content" style="max-width: 580px;">
+      <span class="close-modal" onclick="closeModal('modal-student-card')">&times;</span>
+      <h3>🪪 Kartu Tanda Peserta Ujian</h3>
+      <p style="font-size:13px; color:var(--text-light); margin-bottom:15px;">
+        Identitas resmi peserta ujian berbasis komputer (CBT).
+      </p>
+
+      <div id="student-card-preview-content" style="border: 1.5px solid var(--border); border-radius: 12px; padding: 16px; background: white; margin-bottom: 20px;">
+        <div style="text-align:center; padding:20px; color:var(--text-light);">Memuat kartu ujian...</div>
+      </div>
+
+      <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-student-card')">Tutup</button>
+        <button class="btn btn-primary" onclick="printMyCard()">🖨️ Cetak Kartu Ujian (PDF / Print)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DAFTAR SERTIFIKAT KELULUSAN SISWA -->
+  <div id="modal-student-certs" class="modal">
+    <div class="modal-content" style="max-width: 720px;">
+      <span class="close-modal" onclick="closeModal('modal-student-certs')">&times;</span>
+      <h3>📜 Sertifikat Kelulusan Saya</h3>
+      <p style="font-size:13px; color:var(--text-light); margin-bottom:15px;">
+        Daftar sertifikat kompetensi kelulusan ujian CBT yang berhasil Anda raih.
+      </p>
+
+      <div class="table-container" style="max-height: 380px; overflow-y:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>No. Seri</th>
+              <th>Mata Pelajaran / Ujian</th>
+              <th>Nilai</th>
+              <th>Tanggal</th>
+              <th style="text-align:center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="student-certs-table-body">
+            <tr><td colspan="5" style="text-align:center; padding:20px;">Memuat sertifikat...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer" style="margin-top:20px; display:flex; justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-student-certs')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: KELOLA PROFIL PENGGUNA & AVATAR (PHASE 9) -->
+  <div id="modal-user-profile" class="modal">
+    <div class="modal-content" style="max-width: 540px;">
+      <span class="close-modal" onclick="closeModal('modal-user-profile')">&times;</span>
+      <h3 style="margin-top:0;">⚙️ Pengaturan Profil & Keamanan</h3>
+      <p style="font-size:13px; color:var(--text-light); margin-bottom:18px;">
+        Kelola informasi akun, foto profil, dan kata sandi Anda.
+      </p>
+
+      <!-- Profile Avatar Section -->
+      <div style="display:flex; align-items:center; gap:20px; padding:16px; background:#F8FAFC; border:1px solid var(--border); border-radius:12px; margin-bottom:20px;">
+        <div id="profile-modal-avatar-preview" style="width:72px; height:72px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:26px; overflow:hidden; border:3px solid #E2E8F0; flex-shrink:0; position:relative;">
+          <span id="profile-modal-avatar-initial">U</span>
+        </div>
+        <div style="flex:1;">
+          <h4 id="profile-modal-display-name" style="margin:0 0 4px 0; font-size:16px;">Nama Pengguna</h4>
+          <span id="profile-modal-display-role" class="badge badge-info" style="font-size:11px;">ROLE</span>
+          <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+            <input type="file" id="profile-avatar-file-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="handleAvatarFileSelect(event)">
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('profile-avatar-file-input').click()" style="padding:5px 10px; font-size:12px;">📷 Unggah Foto</button>
+            <button type="button" class="btn btn-danger" id="btn-delete-avatar" onclick="handleDeleteAvatar()" style="padding:5px 10px; font-size:12px;">🗑️ Hapus</button>
+          </div>
+          <span style="font-size:10px; color:var(--text-light); display:block; margin-top:4px;">Format: JPG, PNG, WEBP. Maks 2 MB.</span>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div style="display:flex; border-bottom:2px solid var(--border); margin-bottom:16px; gap:8px;">
+        <button type="button" id="tab-btn-info" class="btn" style="border-radius:6px 6px 0 0; background:var(--primary); color:white; padding:8px 16px; font-size:13px;" onclick="switchProfileTab('info')">Informasi Pribadi</button>
+        <button type="button" id="tab-btn-password" class="btn" style="border-radius:6px 6px 0 0; background:transparent; color:var(--text); padding:8px 16px; font-size:13px;" onclick="switchProfileTab('password')">Ganti Password</button>
+      </div>
+
+      <!-- TAB 1: INFO PRIBADI -->
+      <div id="profile-tab-info">
+        <form onsubmit="handleSaveProfile(event)">
+          <div class="form-group" style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Nama Lengkap</label>
+            <input type="text" id="profile-input-nama" class="form-control" required style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px;">
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Alamat Email</label>
+            <input type="email" id="profile-input-email" class="form-control" placeholder="nama@sekolah.sch.id" style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px;">
+          </div>
+          <div class="form-group" style="margin-bottom:16px;" id="profile-group-nisnip">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;" id="profile-label-extra">Nomor Induk / Identitas</label>
+            <input type="text" id="profile-input-extra" class="form-control" disabled style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:#F1F5F9; color:#64748B;">
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-user-profile')">Batal</button>
+            <button type="submit" id="btn-save-profile" class="btn btn-primary">Simpan Perubahan</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- TAB 2: GANTI PASSWORD -->
+      <div id="profile-tab-password" style="display:none;">
+        <form onsubmit="handleChangePassword(event)">
+          <div class="form-group" style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Password Saat Ini</label>
+            <div style="position:relative;">
+              <input type="password" id="profile-input-current-pwd" class="form-control" required style="width:100%; padding:9px 38px 9px 12px; border:1px solid var(--border); border-radius:8px;">
+              <span onclick="toggleWebPasswordVisibility('profile-input-current-pwd', this)" style="position:absolute; right:10px; top:9px; cursor:pointer; font-size:14px; user-select:none;">👁️</span>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Password Baru (Min. 6 Karakter)</label>
+            <div style="position:relative;">
+              <input type="password" id="profile-input-new-pwd" class="form-control" minlength="6" required style="width:100%; padding:9px 38px 9px 12px; border:1px solid var(--border); border-radius:8px;">
+              <span onclick="toggleWebPasswordVisibility('profile-input-new-pwd', this)" style="position:absolute; right:10px; top:9px; cursor:pointer; font-size:14px; user-select:none;">👁️</span>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Konfirmasi Password Baru</label>
+            <div style="position:relative;">
+              <input type="password" id="profile-input-confirm-pwd" class="form-control" minlength="6" required style="width:100%; padding:9px 38px 9px 12px; border:1px solid var(--border); border-radius:8px;">
+              <span onclick="toggleWebPasswordVisibility('profile-input-confirm-pwd', this)" style="position:absolute; right:10px; top:9px; cursor:pointer; font-size:14px; user-select:none;">👁️</span>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-user-profile')">Batal</button>
+            <button type="submit" id="btn-change-pwd" class="btn btn-primary">Ubah Password</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: PENEMPATAN KELAS & MAPEL GURU -->
+  <div id="modal-assign-guru" class="modal">
+    <div class="modal-content" style="max-width: 580px;">
+      <span class="close-modal" onclick="closeModal('modal-assign-guru')">&times;</span>
+      <h3>🎯 Atur Penempatan Workspace Guru</h3>
+      <p style="font-size:13px; color:var(--text-light); margin-bottom:15px;" id="assign-guru-subtitle">
+        Tentukan Kelas dan Mata Pelajaran yang diampu oleh Guru.
+      </p>
+
+      <input type="hidden" id="assign-guru-id">
+
+      <div style="background:#F8FAFC; border:1px solid var(--border); border-radius:12px; padding:15px; margin-bottom:15px;">
+        <h4 style="font-size:13px; font-weight:700; margin-bottom:10px;">+ Tambah Penempatan</h4>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-group label">Pilih Kelas</label>
+            <select id="assign-select-kelas" class="form-control"></select>
+          </div>
+          <div class="form-col">
+            <label class="form-group label">Pilih Mata Pelajaran</label>
+            <select id="assign-select-mapel" class="form-control"></select>
+          </div>
+        </div>
+        <button class="btn btn-success btn-block" onclick="addAssignmentRow()" style="margin-top:10px;">+ Tambah Penugasan</button>
+      </div>
+
+      <h4 style="font-size:13px; font-weight:700; margin-bottom:10px;">Daftar Penugasan Aktif:</h4>
+      <div class="table-container" style="max-height: 220px; overflow-y:auto; margin-bottom:20px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Kelas</th>
+              <th>Mata Pelajaran</th>
+              <th style="width:70px; text-align:center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="assign-table-body">
+            <tr><td colspan="3" style="text-align:center; padding:15px; color:var(--text-light);">Belum ada penempatan</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-assign-guru')">Batal</button>
+        <button class="btn btn-primary" onclick="handleSaveGuruAssignments()">Simpan Penempatan Workspace</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETAIL KELAS -->
+  <div id="modal-detail-kelas" class="modal">
+    <div class="modal-content" style="max-width: 780px;">
+      <span class="close-modal" onclick="closeModal('modal-detail-kelas')">&times;</span>
+      <h3 id="detail-kelas-title">🏫 Detail Kelas</h3>
+      <div id="detail-kelas-header-badges" style="margin: 10px 0 20px 0; display:flex; gap:8px; flex-wrap:wrap;"></div>
+
+      <div style="display:flex; border-bottom:2px solid var(--border); margin-bottom:16px; gap:8px;">
+        <button type="button" id="tab-kelas-siswa-btn" class="btn" style="border-radius:6px 6px 0 0; background:var(--primary); color:white; padding:7px 14px; font-size:12px;" onclick="switchDetailKelasTab('siswa')">👨‍🎓 Daftar Siswa (<span id="detail-kelas-cnt-siswa">0</span>)</button>
+        <button type="button" id="tab-kelas-guru-btn" class="btn" style="border-radius:6px 6px 0 0; background:transparent; color:var(--text); padding:7px 14px; font-size:12px;" onclick="switchDetailKelasTab('guru')">👨‍🏫 Guru Pengampu (<span id="detail-kelas-cnt-guru">0</span>)</button>
+        <button type="button" id="tab-kelas-mapel-btn" class="btn" style="border-radius:6px 6px 0 0; background:transparent; color:var(--text); padding:7px 14px; font-size:12px;" onclick="switchDetailKelasTab('mapel')">📖 Mata Pelajaran (<span id="detail-kelas-cnt-mapel">0</span>)</button>
+      </div>
+
+      <!-- TAB SISWA -->
+      <div id="detail-kelas-tab-siswa" class="table-container" style="max-height: 320px; overflow-y:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px;">No</th>
+              <th>NIS</th>
+              <th>Nama Siswa</th>
+              <th>Email</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="detail-kelas-siswa-body"></tbody>
+        </table>
+      </div>
+
+      <!-- TAB GURU -->
+      <div id="detail-kelas-tab-guru" class="table-container" style="display:none; max-height: 320px; overflow-y:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px;">No</th>
+              <th>NIP</th>
+              <th>Nama Guru</th>
+              <th>Mata Pelajaran yang Diampu</th>
+            </tr>
+          </thead>
+          <tbody id="detail-kelas-guru-body"></tbody>
+        </table>
+      </div>
+
+      <!-- TAB MAPEL -->
+      <div id="detail-kelas-tab-mapel" class="table-container" style="display:none; max-height: 320px; overflow-y:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px;">No</th>
+              <th>Kode Mapel</th>
+              <th>Mata Pelajaran</th>
+            </tr>
+          </thead>
+          <tbody id="detail-kelas-mapel-body"></tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer" style="margin-top:20px; display:flex; justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-detail-kelas')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETAIL GURU -->
+  <div id="modal-detail-guru" class="modal">
+    <div class="modal-content" style="max-width: 760px;">
+      <span class="close-modal" onclick="closeModal('modal-detail-guru')">&times;</span>
+      <h3 id="detail-guru-title">👨‍🏫 Detail Profil Guru</h3>
+      <div id="detail-guru-info-box" style="background:#F8FAFC; border:1px solid var(--border); border-radius:12px; padding:15px; margin:15px 0 20px 0;"></div>
+
+      <h4 style="font-size:13px; font-weight:700; margin-bottom:10px;">Penempatan Workspace (Kelas & Mapel):</h4>
+      <div id="detail-guru-assignments-box" style="margin-bottom:20px;"></div>
+
+      <h4 style="font-size:13px; font-weight:700; margin-bottom:10px;">Paket Bank Soal & Sesi Ujian:</h4>
+      <div class="table-container" style="max-height:240px; overflow-y:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Judul Bank Soal / Ujian</th>
+              <th>Kelas</th>
+              <th>Mapel</th>
+              <th>Statistik</th>
+            </tr>
+          </thead>
+          <tbody id="detail-guru-soal-body"></tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer" style="margin-top:20px; display:flex; justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-detail-guru')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETAIL SISWA -->
+  <div id="modal-detail-siswa" class="modal">
+    <div class="modal-content" style="max-width: 760px;">
+      <span class="close-modal" onclick="closeModal('modal-detail-siswa')">&times;</span>
+      <h3 id="detail-siswa-title">👨‍🎓 Detail Profil Siswa</h3>
+      <div id="detail-siswa-info-box" style="background:#F8FAFC; border:1px solid var(--border); border-radius:12px; padding:15px; margin:15px 0 20px 0;"></div>
+
+      <h4 style="font-size:13px; font-weight:700; margin-bottom:10px;">Riwayat Ujian & Hasil Nilai:</h4>
+      <div class="table-container" style="max-height:260px; overflow-y:auto; margin-bottom:20px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Ujian</th>
+              <th>Nilai PG</th>
+              <th>Nilai Essay</th>
+              <th>Nilai Akhir</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="detail-siswa-hasil-body"></tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer" style="display:flex; justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-detail-siswa')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETAIL MAPEL -->
+  <div id="modal-detail-mapel" class="modal">
+    <div class="modal-content" style="max-width: 720px;">
+      <span class="close-modal" onclick="closeModal('modal-detail-mapel')">&times;</span>
+      <h3 id="detail-mapel-title">📖 Detail Mata Pelajaran</h3>
+      <div id="detail-mapel-info-box" style="background:#F8FAFC; border:1px solid var(--border); border-radius:12px; padding:15px; margin:15px 0 20px 0;"></div>
+
+      <h4 style="font-size:13px; font-weight:700; margin-bottom:10px;">Daftar Kelas & Guru Pengampu:</h4>
+      <div class="table-container" style="max-height:240px; overflow-y:auto; margin-bottom:20px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Kelas</th>
+              <th>Guru Pengampu</th>
+              <th>NIP</th>
+            </tr>
+          </thead>
+          <tbody id="detail-mapel-guru-body"></tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer" style="display:flex; justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-detail-mapel')">Tutup</button>
       </div>
     </div>
   </div>

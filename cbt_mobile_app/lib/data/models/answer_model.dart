@@ -1,3 +1,4 @@
+import '../../core/utils/type_parser.dart';
 import '../../domain/entities/answer.dart';
 
 class AnswerModel extends Answer {
@@ -29,13 +30,13 @@ class AnswerModel extends Answer {
 
   factory AnswerModel.fromDb(Map<String, dynamic> map) {
     return AnswerModel(
-      id: map['id'] as int?,
-      siswaId: map['siswa_id'] as int,
-      ujianId: map['ujian_id'] as int,
-      soalId: map['soal_id'] as int,
-      pilihanJawabanId: map['pilihan_jawaban_id'] as int?,
+      id: TypeParser.parseInt(map['id']),
+      siswaId: TypeParser.parseIntOr(map['siswa_id'], 0),
+      ujianId: TypeParser.parseIntOr(map['ujian_id'], 0),
+      soalId: TypeParser.parseIntOr(map['soal_id'], 0),
+      pilihanJawabanId: TypeParser.parseInt(map['pilihan_jawaban_id']),
       teksJawabanEssay: (map['teks_jawaban_essay'] ?? '').toString(),
-      isRagu: (map['is_ragu'] as int? ?? 0) == 1,
+      isRagu: TypeParser.parseIntOr(map['is_ragu'], 0) == 1,
       waktuDijawab: DateTime.tryParse(map['waktu_dijawab'].toString()) ?? DateTime.now(),
       syncStatus: (map['sync_status'] ?? 'pending').toString(),
     );

@@ -1,16 +1,27 @@
 const db = require('../database/db');
 
 class ExamRepository {
-  async findAllExamsWithStats() {
-    const exams = await db.query(`
-      SELECT u.*, k.nama_kelas, b.judul as judul_bank_soal
+  async findAllExamsWithStats(guruUserId = null) {
+    let sql = `
+      SELECT u.*, k.nama_kelas, b.judul as judul_bank_soal, b.mapel_id, m.nama_mapel
       FROM ujian u
       LEFT JOIN kelas k ON u.kelas_id = k.id
       LEFT JOIN bank_soal b ON u.bank_soal_id = b.id
-      ORDER BY u.id DESC
-    `);
+      LEFT JOIN mata_pelajaran m ON b.mapel_id = m.id
+    `;
+    const params = [];
 
-    // Attach student completion statistics
+    if (guruUserId) {
+      sql += `
+        JOIN guru g ON g.user_id = ?
+        JOIN guru_kelas_mapel gkm ON (gkm.guru_id = g.id AND gkm.kelas_id = u.kelas_id AND gkm.mapel_id = b.mapel_id)
+      `;
+      params.push(guruUserId);
+    }
+
+    sql += ' ORDER BY u.id DESC';
+    const exams = await db.query(sql, params);
+
     for (const u of exams) {
       const totalRows = await db.query('SELECT COUNT(*) as cnt FROM siswa WHERE kelas_id = ?', [u.kelas_id]);
       const selesaiRows = await db.query('SELECT COUNT(*) as cnt FROM hasil_ujian WHERE ujian_id = ?', [u.id]);
@@ -25,19 +36,22 @@ class ExamRepository {
 
   async findExamById(id) {
     return await db.getOne(`
-      SELECT u.*, k.nama_kelas, b.judul as judul_bank_soal
+      SELECT u.*, k.nama_kelas, b.judul as judul_bank_soal, b.mapel_id, m.nama_mapel, b.guru_id
       FROM ujian u
       LEFT JOIN kelas k ON u.kelas_id = k.id
       LEFT JOIN bank_soal b ON u.bank_soal_id = b.id
+      LEFT JOIN mata_pelajaran m ON b.mapel_id = m.id
       WHERE u.id = ?
     `, [id]);
   }
 
   async findActiveExamsByKelas(kelasId, siswaId = null) {
     let sql = `
-      SELECT u.*, k.nama_kelas
+      SELECT u.*, k.nama_kelas, b.judul as judul_bank_soal, m.nama_mapel
       FROM ujian u
       LEFT JOIN kelas k ON u.kelas_id = k.id
+      LEFT JOIN bank_soal b ON u.bank_soal_id = b.id
+      LEFT JOIN mata_pelajaran m ON b.mapel_id = m.id
       WHERE u.kelas_id = ? AND u.is_aktif = 1
     `;
     const params = [kelasId];

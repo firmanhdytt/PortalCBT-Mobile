@@ -77,6 +77,62 @@ class UserRepository {
   async findTeacherById(id) {
     return await db.getOne('SELECT * FROM guru WHERE id = ?', [id]);
   }
+
+  /**
+   * Update nama & email pengguna secara tersinkronisasi antar tabel
+   */
+  async updateProfile(userId, role, { nama, email }) {
+    if (email !== undefined) {
+      await db.query('UPDATE users SET email = ? WHERE id = ?', [email || null, userId]);
+    }
+
+    if (role === 'siswa') {
+      const updates = [];
+      const params = [];
+      if (nama) { updates.push('nama = ?'); params.push(nama); }
+      if (email !== undefined) { updates.push('email = ?'); params.push(email || null); }
+      if (updates.length > 0) {
+        params.push(userId);
+        await db.query(`UPDATE siswa SET ${updates.join(', ')} WHERE user_id = ?`, params);
+      }
+    } else if (role === 'guru') {
+      const updates = [];
+      const params = [];
+      if (nama) { updates.push('nama = ?'); params.push(nama); }
+      if (email !== undefined) { updates.push('email = ?'); params.push(email || null); }
+      if (updates.length > 0) {
+        params.push(userId);
+        await db.query(`UPDATE guru SET ${updates.join(', ')} WHERE user_id = ?`, params);
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Update path/URL avatar pengguna
+   */
+  async updateAvatar(userId, role, avatarUrl) {
+    await db.query('UPDATE users SET avatar = ? WHERE id = ?', [avatarUrl, userId]);
+    if (role === 'siswa') {
+      await db.query('UPDATE siswa SET avatar = ? WHERE user_id = ?', [avatarUrl, userId]);
+    } else if (role === 'guru') {
+      await db.query('UPDATE guru SET avatar = ? WHERE user_id = ?', [avatarUrl, userId]);
+    }
+    return true;
+  }
+
+  /**
+   * Hapus avatar pengguna (kembalikan ke NULL)
+   */
+  async removeAvatar(userId, role) {
+    await db.query('UPDATE users SET avatar = NULL WHERE id = ?', [userId]);
+    if (role === 'siswa') {
+      await db.query('UPDATE siswa SET avatar = NULL WHERE user_id = ?', [userId]);
+    } else if (role === 'guru') {
+      await db.query('UPDATE guru SET avatar = NULL WHERE user_id = ?', [userId]);
+    }
+    return true;
+  }
 }
 
 module.exports = new UserRepository();

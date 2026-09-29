@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../core/utils/type_parser.dart';
 import '../../domain/entities/exam.dart';
 import '../../domain/entities/question.dart';
 import '../../domain/entities/answer.dart';
@@ -80,7 +81,7 @@ class ExamController extends ChangeNotifier {
       // 1. Check for previously saved incomplete session to resume remaining time
       final incompleteExam = await _local.getActiveIncompleteExam();
       if (incompleteExam != null && incompleteExam['id'] == exam.id && incompleteExam['sisa_detik'] != null) {
-        final savedSeconds = incompleteExam['sisa_detik'] as int;
+        final savedSeconds = TypeParser.parseInt(incompleteExam['sisa_detik']) ?? 0;
         _remainingSeconds = (savedSeconds > 0) ? savedSeconds : exam.durasiMenit * 60;
       } else {
         _remainingSeconds = exam.durasiMenit * 60;
@@ -126,7 +127,7 @@ class ExamController extends ChangeNotifier {
       final res = await _repo.checkUnlockStatus(ujianId: exam.id, siswaId: siswaId);
       if (res['is_locked'] == true) {
         _isLocked = true;
-        _violations = res['strikes'] as int? ?? exam.maxViolations;
+        _violations = TypeParser.parseIntOr(res['strikes'], exam.maxViolations);
         if (res['latest_request'] != null) {
           _pendingRequestStatus = res['latest_request']['status']?.toString();
         }
@@ -172,7 +173,7 @@ class ExamController extends ChangeNotifier {
         description: description,
       );
 
-      _violations = (res['strike_number'] as int?) ?? (_violations + 1);
+      _violations = TypeParser.parseInt(res['strike_number']) ?? (_violations + 1);
       final locked = res['is_locked'] == true || _violations >= exam.maxViolations;
 
       if (locked) {

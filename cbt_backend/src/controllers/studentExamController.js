@@ -5,8 +5,17 @@ const { ApiResponse } = require('../utils/response');
 class StudentExamController {
   async getActiveExams(req, res, next) {
     try {
-      const kelasId = req.params.kelasId;
-      const siswaId = req.query.siswaId;
+      let kelasId = req.params.kelasId;
+      let siswaId = req.query.siswaId;
+
+      if (req.user && req.user.role === 'siswa') {
+        const student = await userRepository.findStudentByUserId(req.user.id);
+        if (student) {
+          kelasId = student.kelas_id;
+          siswaId = student.id;
+        }
+      }
+
       const data = await studentExamService.getActiveExams(kelasId, siswaId);
       // Contract: Flutter expects raw List<dynamic>
       return ApiResponse.raw(res, data);
@@ -50,7 +59,11 @@ class StudentExamController {
 
   async syncAnswers(req, res, next) {
     try {
-      const { siswa_id, ujian_id, jawaban_list } = req.body;
+      let { siswa_id, ujian_id, jawaban_list } = req.body;
+      if (req.user && req.user.role === 'siswa') {
+        const s = await userRepository.findStudentByUserId(req.user.id);
+        if (s) siswa_id = s.id;
+      }
       const result = await studentExamService.syncAnswers(siswa_id, ujian_id, jawaban_list);
       return res.status(200).json({
         message: 'Jawaban disinkronkan ke server!',
@@ -63,7 +76,11 @@ class StudentExamController {
 
   async submitExam(req, res, next) {
     try {
-      const { siswa_id, ujian_id } = req.body;
+      let { siswa_id, ujian_id } = req.body;
+      if (req.user && req.user.role === 'siswa') {
+        const s = await userRepository.findStudentByUserId(req.user.id);
+        if (s) siswa_id = s.id;
+      }
       const hasil = await studentExamService.submitExam(siswa_id, ujian_id);
       return res.status(200).json({
         message: 'Ujian berhasil disimpan! Nilai PG otomatis dihitung.',
@@ -76,7 +93,11 @@ class StudentExamController {
 
   async getStudentResults(req, res, next) {
     try {
-      const siswaId = req.params.siswaId;
+      let siswaId = req.params.siswaId;
+      if (req.user && req.user.role === 'siswa') {
+        const s = await userRepository.findStudentByUserId(req.user.id);
+        if (s) siswaId = s.id;
+      }
       const data = await studentExamService.getStudentResults(siswaId);
       // Contract: Flutter expects raw List<dynamic>
       return ApiResponse.raw(res, data);

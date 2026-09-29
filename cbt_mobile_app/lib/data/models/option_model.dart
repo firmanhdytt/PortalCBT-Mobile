@@ -1,3 +1,4 @@
+import '../../core/utils/type_parser.dart';
 import '../../domain/entities/option.dart';
 
 class OptionModel extends Option {
@@ -10,10 +11,10 @@ class OptionModel extends Option {
 
   factory OptionModel.fromJson(Map<String, dynamic> json, {int? defaultSoalId}) {
     return OptionModel(
-      id: json['id'] as int,
-      soalId: (json['soal_id'] ?? defaultSoalId ?? 0) as int,
-      label: json['label'].toString(),
-      teksPilihan: json['teks_pilihan'].toString(),
+      id: TypeParser.parseIntOr(json['id'], 0),
+      soalId: TypeParser.parseIntOr(json['soal_id'], defaultSoalId ?? 0),
+      label: json['label']?.toString() ?? '',
+      teksPilihan: json['teks_pilihan']?.toString() ?? '',
     );
   }
 
@@ -28,10 +29,10 @@ class OptionModel extends Option {
 
   factory OptionModel.fromDb(Map<String, dynamic> map) {
     return OptionModel(
-      id: map['id'] as int,
-      soalId: map['soal_id'] as int,
-      label: map['label'].toString(),
-      teksPilihan: map['teks_pilihan'].toString(),
+      id: TypeParser.parseIntOr(map['id'], 0),
+      soalId: TypeParser.parseIntOr(map['soal_id'], 0),
+      label: map['label']?.toString() ?? '',
+      teksPilihan: map['teks_pilihan']?.toString() ?? '',
     );
   }
 
