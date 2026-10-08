@@ -1272,6 +1272,14 @@
           </div>
         </div>
         <div class="card" style="margin-top: 20px;">
+          <div class="table-filter-bar" style="display:flex; gap:12px; margin-bottom:15px; flex-wrap:wrap;">
+            <input type="text" id="filter-soal-search" class="form-control" placeholder="🔍 Cari Teks Pertanyaan..." oninput="filterBankSoalQuestions()" style="flex:2; min-width:200px;">
+            <select id="filter-soal-jenis" class="form-control" onchange="filterBankSoalQuestions()" style="flex:1; min-width:140px;">
+              <option value="">Semua Jenis Soal</option>
+              <option value="PG">Pilihan Ganda (PG)</option>
+              <option value="ESSAY">Essay</option>
+            </select>
+          </div>
           <div class="table-container">
             <table>
               <thead>
@@ -1312,6 +1320,7 @@
             <div class="form-col">
               <label class="form-group label">Kelas Sasaran</label>
               <select id="ujian-kelas" class="form-control"></select>
+              <div id="ujian-target-sync-badge" style="margin-top:6px; font-size:11.5px;"></div>
             </div>
             <div class="form-col">
               <label class="form-group label">Durasi (Menit)</label>
@@ -1325,17 +1334,28 @@
           <button class="btn btn-primary" onclick="handleCreateUjian()">Simpan & Rilis Ujian</button>
         </div>
         <div class="card">
+          <div class="card-title-bar">
+            <h3>Daftar Sesi Ujian Terjadwal</h3>
+          </div>
+          <div class="table-filter-bar" style="display:flex; gap:12px; margin-bottom:15px; flex-wrap:wrap;">
+            <input type="text" id="filter-ujian-search" class="form-control" placeholder="🔍 Cari nama ujian / bank soal / kelas..." oninput="filterUjianTable()" style="flex:2; min-width:200px;">
+            <select id="filter-ujian-status" class="form-control" onchange="filterUjianTable()" style="flex:1; min-width:140px;">
+              <option value="">Semua Status</option>
+              <option value="aktif">Aktif</option>
+              <option value="nonaktif">Nonaktif</option>
+            </select>
+          </div>
           <div class="table-container">
             <table>
               <thead>
                 <tr>
                   <th>Nama Ujian</th>
-                  <th>Paket</th>
-                  <th>Kelas</th>
+                  <th>Paket Soal</th>
+                  <th>Kelas Target</th>
                   <th>Token</th>
                   <th>Durasi</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
+                  <th>Status Sesi</th>
+                  <th style="width: 160px; text-align:center;">Aksi</th>
                 </tr>
               </thead>
               <tbody id="exam-list-table-body"></tbody>
@@ -1393,6 +1413,14 @@
         </div>
 
         <div class="card">
+          <div class="table-filter-bar" style="display:flex; gap:12px; margin-bottom:15px; flex-wrap:wrap;">
+            <input type="text" id="filter-grading-search" class="form-control" placeholder="🔍 Cari Nama / NIS Siswa / Soal..." oninput="filterGradingItems()" style="flex:2; min-width:200px;">
+            <select id="filter-grading-status" class="form-control" onchange="filterGradingItems()" style="flex:1; min-width:150px;">
+              <option value="">Semua Status Koreksi</option>
+              <option value="pending">Belum Dinilai</option>
+              <option value="completed">Selesai Dinilai</option>
+            </select>
+          </div>
           <div id="essay-list-container">
             <p style="text-align: center; color: var(--text-light); padding:20px;">Silakan pilih sesi ujian untuk memulai koreksi essay.</p>
           </div>
@@ -1443,6 +1471,15 @@
           <div class="card-title-bar">
             <h3>Daftar Nilai Siswa</h3>
             <span class="badge badge-info" id="rekap-kkm-info">KKM: -</span>
+          </div>
+          <div class="table-filter-bar" style="display:flex; gap:12px; margin-bottom:15px; flex-wrap:wrap;">
+            <input type="text" id="filter-rekap-search" class="form-control" placeholder="🔍 Cari Nama / NIS Siswa..." oninput="filterRekapTable()" style="flex:2; min-width:200px;">
+            <select id="filter-rekap-status" class="form-control" onchange="filterRekapTable()" style="flex:1; min-width:150px;">
+              <option value="">Semua Status Kelulusan</option>
+              <option value="LULUS">LULUS</option>
+              <option value="BELUM LULUS">BELUM LULUS</option>
+              <option value="PENDING">PENDING</option>
+            </select>
           </div>
           <div class="table-container">
             <table>
@@ -1592,6 +1629,12 @@
           <div class="card-title-bar">
             <h3>Daftar Siswa Terdaftar</h3>
           </div>
+          <div class="table-filter-bar" style="display:flex; gap:12px; margin-bottom:15px; flex-wrap:wrap;">
+            <input type="text" id="filter-siswa-search" class="form-control" placeholder="🔍 Cari NIS / Nama Siswa..." oninput="filterMasterSiswaTable()" style="flex:2; min-width:200px;">
+            <select id="filter-siswa-kelas" class="form-control" onchange="filterMasterSiswaTable()" style="flex:1; min-width:150px;">
+              <option value="">Semua Kelas</option>
+            </select>
+          </div>
           <div class="table-container">
             <table>
               <thead>
@@ -1632,6 +1675,9 @@
             <div class="card">
               <div class="card-title-bar">
                 <h3>Daftar Kelas</h3>
+              </div>
+              <div class="table-filter-bar" style="margin-bottom:15px;">
+                <input type="text" id="filter-kelas-search" class="form-control" placeholder="🔍 Cari Nama Kelas..." oninput="filterMasterKelasTable()">
               </div>
               <div class="table-container">
                 <table>
@@ -1677,6 +1723,9 @@
             <div class="card">
               <div class="card-title-bar">
                 <h3>Daftar Mata Pelajaran</h3>
+              </div>
+              <div class="table-filter-bar" style="margin-bottom:15px;">
+                <input type="text" id="filter-mapel-search" class="form-control" placeholder="🔍 Cari Kode / Nama Mapel..." oninput="filterMasterMapelTable()">
               </div>
               <div class="table-container">
                 <table>
@@ -1744,6 +1793,12 @@
         <div class="card">
           <div class="card-title-bar">
             <h3>Daftar Guru & Penempatan Kelas/Mapel</h3>
+          </div>
+          <div class="table-filter-bar" style="display:flex; gap:12px; margin-bottom:15px; flex-wrap:wrap;">
+            <input type="text" id="filter-guru-search" class="form-control" placeholder="🔍 Cari NIP / Nama Guru..." oninput="filterMasterGuruTable()" style="flex:2; min-width:200px;">
+            <select id="filter-guru-kelas" class="form-control" onchange="filterMasterGuruTable()" style="flex:1; min-width:150px;">
+              <option value="">Semua Kelas Penempatan</option>
+            </select>
           </div>
           <div class="table-container">
             <table>

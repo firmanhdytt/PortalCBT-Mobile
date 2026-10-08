@@ -14,7 +14,8 @@ class ExamRepository {
     if (guruUserId) {
       sql += `
         JOIN guru g ON g.user_id = ?
-        JOIN guru_kelas_mapel gkm ON (gkm.guru_id = g.id AND gkm.kelas_id = u.kelas_id AND gkm.mapel_id = b.mapel_id)
+        LEFT JOIN guru_kelas_mapel gkm ON (gkm.guru_id = g.id AND gkm.kelas_id = u.kelas_id AND gkm.mapel_id = b.mapel_id)
+        WHERE (gkm.id IS NOT NULL OR b.guru_id = g.id)
       `;
       params.push(guruUserId);
     }

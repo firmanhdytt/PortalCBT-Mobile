@@ -29,6 +29,18 @@ let currentUser = null;
 let currentProfil = null;
 let editingSoalId = null;
 
+// State Cache untuk Admin & Guru Tables
+let stateGuruList = [];
+let stateSiswaList = [];
+let stateKelasList = [];
+let stateMapelList = [];
+let stateUjianList = [];
+let stateBankSoalList = [];
+let stateQuestionsList = [];
+let stateGradingList = [];
+let stateRekapList = [];
+let stateRekapCertMap = {};
+
 // State untuk Ujian Siswa
 let studentUjianList = [];
 let activeSiswaUjian = null;
@@ -655,42 +667,63 @@ function loadBankSoalPage() {
 
 function loadQuestionsForBankSoal(bankId) {
   if (!bankId) {
-    document.getElementById("question-table-body").innerHTML = `<tr><td colspan="5" style="text-align: center;">Pilih paket soal terlebih dahulu.</td></tr>`;
+    stateQuestionsList = [];
+    renderQuestionsTable([]);
     return;
   }
 
   fetch(`/api/guru/soal/${bankId}`)
     .then(res => res.json())
     .then(list => {
-      const tbody = document.getElementById("question-table-body");
-      tbody.innerHTML = "";
-      if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">Belum ada butir soal.</td></tr>`;
-        return;
-      }
-
-      list.forEach((s, idx) => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${idx + 1}</td>
-            <td><span class="badge badge-info">${s.jenis_soal}</span></td>
-            <td>
-              <div><strong>${s.teks_soal}</strong></div>
-              ${s.jenis_soal === 'PG' ? `
-                <div style="font-size:12px; margin-top:5px; color:var(--text-light)">
-                  Opsi: ${s.pilihan.map(o => `${o.label}. ${o.teks_pilihan} ${o.is_kunci ? '<b>(Kunci)</b>' : ''}`).join(' | ')}
-                </div>
-              ` : ''}
-            </td>
-            <td>${s.bobot}</td>
-            <td>
-              <button class="btn btn-secondary" onclick="openEditQuestionModal(${s.id})" style="padding: 4px 8px; font-size:12px; margin-right:5px;">Edit</button>
-              <button class="btn btn-danger" onclick="deleteQuestion(${s.id}, ${bankId})" style="padding: 4px 8px; font-size:12px;">Hapus</button>
-            </td>
-          </tr>
-        `;
-      });
+      stateQuestionsList = list || [];
+      filterBankSoalQuestions();
     });
+}
+
+function filterBankSoalQuestions() {
+  const q = (document.getElementById("filter-soal-search")?.value || "").toLowerCase().trim();
+  const jenis = (document.getElementById("filter-soal-jenis")?.value || "").toUpperCase().trim();
+
+  const filtered = stateQuestionsList.filter(s => {
+    const matchQ = !q || (s.teks_soal || "").toLowerCase().includes(q);
+    const matchJenis = !jenis || (s.jenis_soal || "").toUpperCase() === jenis;
+    return matchQ && matchJenis;
+  });
+
+  renderQuestionsTable(filtered);
+}
+
+function renderQuestionsTable(list) {
+  const tbody = document.getElementById("question-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  if (!list || list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding:20px; color:var(--text-light);">Tidak ada butir soal yang cocok.</td></tr>`;
+    return;
+  }
+
+  list.forEach((s, idx) => {
+    const bankId = document.getElementById("select-bank-soal")?.value;
+    tbody.innerHTML += `
+      <tr>
+        <td>${idx + 1}</td>
+        <td><span class="badge ${s.jenis_soal === 'PG' ? 'badge-primary' : 'badge-info'}">${s.jenis_soal}</span></td>
+        <td>
+          <div><strong>${s.teks_soal}</strong></div>
+          ${s.jenis_soal === 'PG' && s.pilihan ? `
+            <div style="font-size:12px; margin-top:5px; color:var(--text-light)">
+              Opsi: ${s.pilihan.map(o => `${o.label}. ${o.teks_pilihan} ${o.is_kunci ? '<b>(Kunci)</b>' : ''}`).join(' | ')}
+            </div>
+          ` : ''}
+        </td>
+        <td>${s.bobot}</td>
+        <td>
+          <button class="btn btn-secondary" onclick="openEditQuestionModal(${s.id})" style="padding: 4px 8px; font-size:12px; margin-right:5px;">Edit</button>
+          <button class="btn btn-danger" onclick="deleteQuestion(${s.id}, ${bankId})" style="padding: 4px 8px; font-size:12px;">Hapus</button>
+        </td>
+      </tr>
+    `;
+  });
 }
 
 function openCreateBankSoalModal() {
@@ -958,17 +991,61 @@ function deleteQuestion(id, bankId) {
   }
 }
 
+function syncUjianTargetClass() {
+  const bankSelect = document.getElementById("ujian-bank-soal");
+  const kelasSelect = document.getElementById("ujian-kelas");
+  const syncBadge = document.getElementById("ujian-target-sync-badge");
+
+  if (!bankSelect || !kelasSelect) return;
+  const selectedOpt = bankSelect.options[bankSelect.selectedIndex];
+  if (!selectedOpt) return;
+
+  const targetKelasId = selectedOpt.getAttribute("data-kelas-id");
+  const targetKelasNama = selectedOpt.getAttribute("data-kelas-nama");
+  const targetMapelNama = selectedOpt.getAttribute("data-mapel-nama");
+
+  if (targetKelasId && targetKelasId !== "null" && targetKelasId !== "undefined" && targetKelasId !== "") {
+    kelasSelect.value = targetKelasId;
+    if (syncBadge) {
+      syncBadge.className = "badge badge-success";
+      syncBadge.innerHTML = `🎯 Tersambung Otomatis: Kelas ${targetKelasNama || ''} (${targetMapelNama || ''})`;
+      syncBadge.style.display = "inline-block";
+    }
+  } else {
+    if (syncBadge) {
+      syncBadge.className = "badge badge-warning";
+      syncBadge.innerHTML = `⚠️ Pilih Kelas Sasaran Manual`;
+      syncBadge.style.display = "inline-block";
+    }
+  }
+}
+
 function loadUjianPage() {
   fetch('/api/guru/bank-soal').then(res => res.json()).then(list => {
+    stateBankSoalList = list || [];
     const select = document.getElementById("ujian-bank-soal");
-    select.innerHTML = "";
-    list.forEach(b => select.innerHTML += `<option value="${b.id}">${b.judul}</option>`);
+    if (select) {
+      select.innerHTML = "";
+      if (!list || list.length === 0) {
+        select.innerHTML = `<option value="">-- Belum Ada Bank Soal --</option>`;
+      } else {
+        list.forEach(b => {
+          select.innerHTML += `<option value="${b.id}" data-kelas-id="${b.kelas_id || ''}" data-kelas-nama="${b.nama_kelas || '-'}" data-mapel-nama="${b.nama_mapel || '-'}">${b.judul} — [${b.nama_kelas || 'Semua Kelas'} | ${b.nama_mapel || 'Mapel'}]</option>`;
+        });
+      }
+      select.onchange = syncUjianTargetClass;
+    }
+    syncUjianTargetClass();
   });
 
   fetch('/api/admin/kelas').then(res => res.json()).then(list => {
+    stateKelasList = list || [];
     const select = document.getElementById("ujian-kelas");
-    select.innerHTML = "";
-    list.forEach(k => select.innerHTML += `<option value="${k.id}">${k.nama_kelas}</option>`);
+    if (select) {
+      select.innerHTML = "";
+      list.forEach(k => select.innerHTML += `<option value="${k.id}">${k.nama_kelas}</option>`);
+    }
+    syncUjianTargetClass();
   });
 
   loadExamsTable();
@@ -978,36 +1055,56 @@ function loadExamsTable() {
   fetch('/api/guru/ujian')
     .then(res => res.json())
     .then(list => {
-      const tbody = document.getElementById("exam-list-table-body");
-      tbody.innerHTML = "";
-      if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Belum ada sesi ujian terjadwal.</td></tr>`;
-        return;
-      }
-
-      list.forEach(u => {
-        tbody.innerHTML += `
-          <tr>
-            <td><strong>${u.nama_ujian}</strong></td>
-            <td>${u.judul_bank_soal}</td>
-            <td>
-              <div>${u.nama_kelas}</div>
-              <div style="font-size:11px; color:var(--text-light); margin-top:2px;">Progres: ${u.selesai_siswa} / ${u.total_siswa} Selesai</div>
-            </td>
-            <td><span class="badge badge-info">${u.token}</span></td>
-            <td>${u.durasi_menit} Menit</td>
-            <td>
-              <button class="btn ${u.is_aktif ? 'btn-success' : 'btn-secondary'}" onclick="toggleUjian(${u.id})" style="padding: 4px 8px; font-size:12px;">
-                ${u.is_aktif ? 'Aktif' : 'Mati'}
-              </button>
-            </td>
-            <td>
-              <button class="btn btn-primary" onclick="goToMonitoring(${u.id})" style="padding: 4px 8px; font-size:12px;">Monitor</button>
-            </td>
-          </tr>
-        `;
-      });
+      stateUjianList = list || [];
+      filterUjianTable();
     });
+}
+
+function filterUjianTable() {
+  const q = (document.getElementById("filter-ujian-search")?.value || "").toLowerCase().trim();
+  const st = (document.getElementById("filter-ujian-status")?.value || "").toLowerCase().trim();
+
+  const filtered = stateUjianList.filter(u => {
+    const matchQ = !q || (u.nama_ujian || "").toLowerCase().includes(q) || (u.judul_bank_soal || "").toLowerCase().includes(q) || (u.nama_kelas || "").toLowerCase().includes(q) || (u.token || "").toLowerCase().includes(q);
+    const isAktif = u.is_aktif ? "aktif" : "nonaktif";
+    const matchSt = !st || isAktif === st;
+    return matchQ && matchSt;
+  });
+
+  renderUjianTable(filtered);
+}
+
+function renderUjianTable(list) {
+  const tbody = document.getElementById("exam-list-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  if (!list || list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-light);">Tidak ada sesi ujian yang cocok.</td></tr>`;
+    return;
+  }
+
+  list.forEach(u => {
+    tbody.innerHTML += `
+      <tr>
+        <td><strong>${u.nama_ujian}</strong></td>
+        <td>${u.judul_bank_soal || '-'}</td>
+        <td>
+          <span class="badge badge-info">${u.nama_kelas || '-'}</span>
+          <div style="font-size:11px; color:var(--text-light); margin-top:2px;">Progres: ${u.selesai_siswa || 0} / ${u.total_siswa || 0} Selesai</div>
+        </td>
+        <td><span class="badge badge-warning" style="font-family:monospace; letter-spacing:1px;">${u.token}</span></td>
+        <td>${u.durasi_menit} Menit</td>
+        <td>
+          <button class="btn ${u.is_aktif ? 'btn-success' : 'btn-secondary'}" onclick="toggleUjian(${u.id})" style="padding: 4px 8px; font-size:12px;">
+            ${u.is_aktif ? '✓ Aktif' : '⏸️ Nonaktif'}
+          </button>
+        </td>
+        <td style="text-align:center;">
+          <button class="btn btn-primary" onclick="goToMonitoring(${u.id})" style="padding: 4px 8px; font-size:12px;">📡 Monitor</button>
+        </td>
+      </tr>
+    `;
+  });
 }
 
 function handleCreateUjian() {
@@ -1187,6 +1284,7 @@ function loadGradingPage() {
 
 function loadEssayAnswers(ujianId) {
   if (!ujianId) {
+    stateGradingList = [];
     document.getElementById("essay-list-container").innerHTML = `<p style="text-align: center; color: var(--text-light); padding:20px;">Silakan pilih sesi ujian.</p>`;
     const bar = document.getElementById("grading-stats-bar");
     if (bar) bar.style.display = "none";
@@ -1199,81 +1297,111 @@ function loadEssayAnswers(ujianId) {
   fetch(`/api/guru/nilai-essay/list/${ujianId}`)
     .then(res => res.json())
     .then(list => {
-      container.innerHTML = "";
-
-      if (!list || list.length === 0) {
-        const bar = document.getElementById("grading-stats-bar");
-        if (bar) bar.style.display = "none";
-        container.innerHTML = `<p style="text-align: center; color: var(--text-light); padding:25px;">Tidak ada jawaban essay pada sesi ujian ini.</p>`;
-        return;
-      }
-
-      // Stats
-      const total = list.length;
-      const completed = list.filter(j => j.nilai_manual !== null && j.nilai_manual !== undefined).length;
-      const pending = total - completed;
-
-      const totalEl = document.getElementById("grading-stat-total");
-      const pendingEl = document.getElementById("grading-stat-pending");
-      const compEl = document.getElementById("grading-stat-completed");
-      const bar = document.getElementById("grading-stats-bar");
-      if (totalEl) totalEl.innerText = total;
-      if (pendingEl) pendingEl.innerText = pending;
-      if (compEl) compEl.innerText = completed;
-      if (bar) bar.style.display = "grid";
-
-      list.forEach((j, idx) => {
-        const isGraded = j.nilai_manual !== null && j.nilai_manual !== undefined;
-        const statusBadge = isGraded
-          ? `<span class="badge badge-success">✓ Sudah Dinilai (${j.nilai_manual} / ${j.soal_bobot} Poin)</span>`
-          : `<span class="badge badge-warning">⏳ Belum Dinilai</span>`;
-
-        container.innerHTML += `
-          <div class="grading-box" style="background:#FFFFFF; border: 1.5px solid ${isGraded ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}; margin-bottom: 20px;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; border-bottom:1px solid #E2E8F0; padding-bottom:8px;">
-              <div>
-                <strong style="font-size:14px; color:var(--text);">${idx + 1}. ${j.siswa_nama}</strong>
-                <span style="font-size:12px; color:var(--text-light); margin-left:8px;">(NIS: ${j.nis || '-'})</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span class="badge badge-info">Bobot Maks: ${j.soal_bobot}</span>
-                ${statusBadge}
-              </div>
-            </div>
-            
-            <div style="margin-bottom:12px; font-size:13.5px; line-height:1.5;">
-              <strong style="color:var(--text);">Pertanyaan:</strong><br>
-              <div style="margin-top:4px; padding:8px 12px; background:#F8FAFC; border-radius:6px; border:1px solid #E2E8F0;">
-                ${j.soal_teks}
-              </div>
-            </div>
-
-            <div style="margin-bottom:14px;">
-              <strong style="color:var(--text); font-size:13.5px;">Jawaban Siswa:</strong>
-              <div class="essay-student-ans" style="margin-top:4px; font-style:normal; white-space:pre-wrap; background:#F1F5F9; border-left:4px solid var(--primary); padding:10px 14px;">
-                ${j.jawaban_teks ? j.jawaban_teks : '<i style="color:var(--text-light);">(Siswa tidak memberikan jawaban)</i>'}
-              </div>
-            </div>
-
-            <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E2E8F0;">
-              <div style="width:130px;">
-                <label style="display:block; font-size:11px; font-weight:700; margin-bottom:4px; color:#475569;">NILAI (0 - ${j.soal_bobot})</label>
-                <input type="number" id="grade-input-${j.jawaban_id}" class="form-control" style="text-align:center; font-weight:700; font-size:15px;" min="0" max="${j.soal_bobot}" step="0.5" value="${j.nilai_manual !== null && j.nilai_manual !== undefined ? j.nilai_manual : ''}" placeholder="0">
-              </div>
-              <div style="flex:1; min-width:200px;">
-                <label style="display:block; font-size:11px; font-weight:700; margin-bottom:4px; color:#475569;">CATATAN / FEEDBACK GURU (OPSIONAL)</label>
-                <input type="text" id="grade-note-${j.jawaban_id}" class="form-control" value="${j.catatan_guru ? j.catatan_guru.replace(/"/g, '&quot;') : ''}" placeholder="Catatan evaluasi untuk siswa...">
-              </div>
-              <div>
-                <button class="btn btn-primary" onclick="submitGrade(${j.jawaban_id}, ${ujianId}, ${j.soal_bobot})" style="padding:10px 18px; font-weight:600;">
-                  💾 Simpan Nilai
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      });
+      stateGradingList = list || [];
+      filterGradingItems();
     })
+    .catch(err => {
+      container.innerHTML = `<p style="color:var(--danger); text-align:center; padding:20px;">Gagal memuat jawaban essay: ${err.message}</p>`;
+    });
+}
+
+function filterGradingItems() {
+  const q = (document.getElementById("filter-grading-search")?.value || "").toLowerCase().trim();
+  const st = (document.getElementById("filter-grading-status")?.value || "").toLowerCase().trim();
+
+  const filtered = stateGradingList.filter(j => {
+    const matchQ = !q || (j.siswa_nama || "").toLowerCase().includes(q) || (j.nis || "").toLowerCase().includes(q) || (j.soal_teks || "").toLowerCase().includes(q);
+    const isGraded = j.nilai_manual !== null && j.nilai_manual !== undefined;
+    const statusStr = isGraded ? "completed" : "pending";
+    const matchSt = !st || statusStr === st;
+    return matchQ && matchSt;
+  });
+
+  renderGradingItems(filtered);
+}
+
+function renderGradingItems(list) {
+  const container = document.getElementById("essay-list-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const total = stateGradingList.length;
+  const completed = stateGradingList.filter(j => j.nilai_manual !== null && j.nilai_manual !== undefined).length;
+  const pending = total - completed;
+
+  const totalEl = document.getElementById("grading-stat-total");
+  const pendingEl = document.getElementById("grading-stat-pending");
+  const compEl = document.getElementById("grading-stat-completed");
+  const bar = document.getElementById("grading-stats-bar");
+
+  if (total > 0) {
+    if (totalEl) totalEl.innerText = total;
+    if (pendingEl) pendingEl.innerText = pending;
+    if (compEl) compEl.innerText = completed;
+    if (bar) bar.style.display = "grid";
+  } else {
+    if (bar) bar.style.display = "none";
+  }
+
+  if (!list || list.length === 0) {
+    container.innerHTML = `<p style="text-align: center; color: var(--text-light); padding:25px;">Tidak ada jawaban essay yang cocok.</p>`;
+    return;
+  }
+
+  const ujianId = document.getElementById("grading-select-ujian")?.value;
+
+  list.forEach((j, idx) => {
+    const isGraded = j.nilai_manual !== null && j.nilai_manual !== undefined;
+    const statusBadge = isGraded
+      ? `<span class="badge badge-success">✓ Sudah Dinilai (${j.nilai_manual} / ${j.soal_bobot} Poin)</span>`
+      : `<span class="badge badge-warning">⏳ Belum Dinilai</span>`;
+
+    container.innerHTML += `
+      <div class="grading-box" style="background:#FFFFFF; border: 1.5px solid ${isGraded ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}; margin-bottom: 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; border-bottom:1px solid #E2E8F0; padding-bottom:8px;">
+          <div>
+            <strong style="font-size:14px; color:var(--text);">${idx + 1}. ${j.siswa_nama}</strong>
+            <span style="font-size:12px; color:var(--text-light); margin-left:8px;">(NIS: ${j.nis || '-'})</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="badge badge-info">Bobot Maks: ${j.soal_bobot}</span>
+            ${statusBadge}
+          </div>
+        </div>
+        
+        <div style="margin-bottom:12px; font-size:13.5px; line-height:1.5;">
+          <strong style="color:var(--text);">Pertanyaan:</strong><br>
+          <div style="margin-top:4px; padding:8px 12px; background:#F8FAFC; border-radius:6px; border:1px solid #E2E8F0;">
+            ${j.soal_teks}
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <strong style="color:var(--text); font-size:13.5px;">Jawaban Siswa:</strong>
+          <div class="essay-student-ans" style="margin-top:4px; font-style:normal; white-space:pre-wrap; background:#F1F5F9; border-left:4px solid var(--primary); padding:10px 14px;">
+            ${j.jawaban_teks ? j.jawaban_teks : '<i style="color:var(--text-light);">(Siswa tidak memberikan jawaban)</i>'}
+          </div>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E2E8F0;">
+          <div style="width:130px;">
+            <label style="display:block; font-size:11px; font-weight:700; margin-bottom:4px; color:#475569;">NILAI (0 - ${j.soal_bobot})</label>
+            <input type="number" id="grade-input-${j.jawaban_id}" class="form-control" style="text-align:center; font-weight:700; font-size:15px;" min="0" max="${j.soal_bobot}" step="0.5" value="${j.nilai_manual !== null && j.nilai_manual !== undefined ? j.nilai_manual : ''}" placeholder="0">
+          </div>
+          <div style="flex:1; min-width:200px;">
+            <label style="display:block; font-size:11px; font-weight:700; margin-bottom:4px; color:#475569;">CATATAN / FEEDBACK GURU (OPSIONAL)</label>
+            <input type="text" id="grade-note-${j.jawaban_id}" class="form-control" value="${j.catatan_guru ? j.catatan_guru.replace(/"/g, '&quot;') : ''}" placeholder="Catatan evaluasi untuk siswa...">
+          </div>
+          <div>
+            <button class="btn btn-primary" onclick="submitGrade(${j.jawaban_id}, ${ujianId}, ${j.soal_bobot})" style="padding:10px 18px; font-weight:600;">
+              💾 Simpan Nilai
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+}
     .catch(err => {
       container.innerHTML = `<p style="color:var(--danger); text-align:center; padding:20px;">Gagal memuat jawaban essay: ${err.message}</p>`;
     });
@@ -1340,14 +1468,16 @@ function loadRekapPage() {
 
 function loadRekapNilai(ujianId) {
   if (!ujianId) {
+    stateRekapList = [];
+    stateRekapCertMap = {};
     const cards = document.getElementById("rekap-summary-cards");
     if (cards) cards.style.display = "none";
-    document.getElementById("rekap-table-body").innerHTML = `<tr><td colspan="9" style="text-align:center; padding:25px; color:var(--text-light);">Silakan pilih sesi ujian untuk melihat rekapitulasi nilai.</td></tr>`;
+    document.getElementById("rekap-table-body").innerHTML = `<tr><td colspan="10" style="text-align:center; padding:25px; color:var(--text-light);">Silakan pilih sesi ujian untuk melihat rekapitulasi nilai.</td></tr>`;
     return;
   }
 
   const tbody = document.getElementById("rekap-table-body");
-  tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:25px; color:var(--text-light);">Memuat rekapitulasi nilai...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:25px; color:var(--text-light);">Memuat rekapitulasi nilai...</td></tr>`;
 
   // 1. Fetch Class Aggregate Analytics
   fetch(`/api/guru/analisis-kelas/${ujianId}`)
@@ -1375,70 +1505,93 @@ function loadRekapNilai(ujianId) {
     fetch(`/api/guru/sertifikat/ujian/${ujianId}`).then(res => res.json()).catch(() => ({ data: [] }))
   ])
     .then(([list, certRes]) => {
-      tbody.innerHTML = "";
-      if (!list || list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:25px; color:var(--text-light);">Belum ada peserta yang mengumpulkan ujian ini.</td></tr>`;
-        return;
+      stateRekapList = list || [];
+      const certs = (certRes && certRes.data) || [];
+      stateRekapCertMap = {};
+      certs.forEach(c => {
+        stateRekapCertMap[c.siswa_id] = c;
+      });
+
+      if (list && list.length > 0) {
+        const kkm = list[0].kkm ?? 75;
+        const kkmEl = document.getElementById("rekap-kkm-info");
+        if (kkmEl) kkmEl.innerText = `KKM: ${kkm}`;
       }
 
-      const certs = (certRes && certRes.data) || [];
-      const certMap = {};
-      certs.forEach(c => {
-        certMap[c.siswa_id] = c;
-      });
-
-      const kkm = list[0].kkm ?? 75;
-      const kkmEl = document.getElementById("rekap-kkm-info");
-      if (kkmEl) kkmEl.innerText = `KKM: ${kkm}`;
-
-      list.forEach((r, idx) => {
-        let statusBadge = '<span class="badge badge-warning">PENDING</span>';
-        if (r.status_kelulusan === 'LULUS') {
-          statusBadge = '<span class="badge badge-success">✓ LULUS</span>';
-        } else if (r.status_kelulusan === 'REMIDI') {
-          statusBadge = '<span class="badge badge-danger">✗ REMIDI</span>';
-        }
-
-        let certAction = `<span style="color:var(--text-light); font-size:12px;">-</span>`;
-        if (r.status_kelulusan === 'LULUS') {
-          const existingCert = certMap[r.siswa_id];
-          if (existingCert) {
-            certAction = `
-              <button class="btn btn-secondary" onclick="openPrintCert('${existingCert.certificate_number}')" style="font-size:11px; padding:3px 8px; font-weight:600;">
-                📜 Cetak
-              </button>
-            `;
-          } else {
-            certAction = `
-              <button class="btn btn-primary" onclick="issueSingleCert(${r.ujian_id}, ${r.siswa_id})" style="font-size:11px; padding:3px 8px; font-weight:600;">
-                📜 Terbitkan
-              </button>
-            `;
-          }
-        }
-
-        tbody.innerHTML += `
-          <tr>
-            <td>${idx + 1}</td>
-            <td><strong>${r.nis}</strong></td>
-            <td>${r.nama_siswa}</td>
-            <td>${r.nama_kelas}</td>
-            <td>
-              <span style="color:var(--success); font-weight:700;">${r.jumlah_benar} Benar</span> / 
-              <span style="color:var(--danger); font-weight:700;">${r.jumlah_salah} Salah</span>
-            </td>
-            <td>${r.nilai_pg !== null && r.nilai_pg !== undefined ? r.nilai_pg : '-'}</td>
-            <td>${r.nilai_essay !== null && r.nilai_essay !== undefined ? r.nilai_essay : '<i style="color:var(--text-light);">-</i>'}</td>
-            <td><strong style="color:var(--primary); font-size:15px;">${r.nilai_akhir}</strong></td>
-            <td>${statusBadge}</td>
-            <td style="text-align:center;">${certAction}</td>
-          </tr>
-        `;
-      });
+      filterRekapTable();
     })
     .catch(err => {
       tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:25px; color:var(--danger);">Gagal memuat rekap: ${err.message}</td></tr>`;
     });
+}
+
+function filterRekapTable() {
+  const q = (document.getElementById("filter-rekap-search")?.value || "").toLowerCase().trim();
+  const st = (document.getElementById("filter-rekap-status")?.value || "").toUpperCase().trim();
+
+  const filtered = stateRekapList.filter(r => {
+    const matchQ = !q || (r.nis || "").toLowerCase().includes(q) || (r.nama_siswa || "").toLowerCase().includes(q) || (r.nama_kelas || "").toLowerCase().includes(q);
+    const matchSt = !st || (r.status_kelulusan || "").toUpperCase() === st;
+    return matchQ && matchSt;
+  });
+
+  renderRekapTable(filtered);
+}
+
+function renderRekapTable(list) {
+  const tbody = document.getElementById("rekap-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (!list || list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:25px; color:var(--text-light);">Tidak ada peserta yang cocok.</td></tr>`;
+    return;
+  }
+
+  list.forEach((r, idx) => {
+    let statusBadge = '<span class="badge badge-warning">PENDING</span>';
+    if (r.status_kelulusan === 'LULUS') {
+      statusBadge = '<span class="badge badge-success">✓ LULUS</span>';
+    } else if (r.status_kelulusan === 'REMIDI') {
+      statusBadge = '<span class="badge badge-danger">✗ REMIDI</span>';
+    }
+
+    let certAction = `<span style="color:var(--text-light); font-size:12px;">-</span>`;
+    if (r.status_kelulusan === 'LULUS') {
+      const existingCert = stateRekapCertMap[r.siswa_id];
+      if (existingCert) {
+        certAction = `
+          <button class="btn btn-secondary" onclick="openPrintCert('${existingCert.certificate_number}')" style="font-size:11px; padding:3px 8px; font-weight:600;">
+            📜 Cetak
+          </button>
+        `;
+      } else {
+        certAction = `
+          <button class="btn btn-primary" onclick="issueSingleCert(${r.ujian_id}, ${r.siswa_id})" style="font-size:11px; padding:3px 8px; font-weight:600;">
+            📜 Terbitkan
+          </button>
+        `;
+      }
+    }
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${idx + 1}</td>
+        <td><strong>${r.nis}</strong></td>
+        <td>${r.nama_siswa}</td>
+        <td>${r.nama_kelas}</td>
+        <td>
+          <span style="color:var(--success); font-weight:700;">${r.jumlah_benar} Benar</span> / 
+          <span style="color:var(--danger); font-weight:700;">${r.jumlah_salah} Salah</span>
+        </td>
+        <td>${r.nilai_pg !== null && r.nilai_pg !== undefined ? r.nilai_pg : '-'}</td>
+        <td>${r.nilai_essay !== null && r.nilai_essay !== undefined ? r.nilai_essay : '<i style="color:var(--text-light);">-</i>'}</td>
+        <td><strong style="color:var(--primary); font-size:15px;">${r.nilai_akhir}</strong></td>
+        <td>${statusBadge}</td>
+        <td style="text-align:center;">${certAction}</td>
+      </tr>
+    `;
+  });
 }
 
 function exportRecapCSV() {
@@ -1622,7 +1775,12 @@ function loadMasterSiswaPage() {
       const select = document.getElementById("siswa-kelas");
       if (select) {
         select.innerHTML = "";
-        list.forEach(k => select.innerHTML += `<option value="${k.id}">${k.nama_kelas}</option>`);
+        (list || []).forEach(k => select.innerHTML += `<option value="${k.id}">${k.nama_kelas}</option>`);
+      }
+      const filterSelect = document.getElementById("filter-siswa-kelas");
+      if (filterSelect) {
+        filterSelect.innerHTML = `<option value="">Semua Kelas</option>`;
+        (list || []).forEach(k => filterSelect.innerHTML += `<option value="${k.nama_kelas}">${k.nama_kelas}</option>`);
       }
     });
   loadStudentsTable();
@@ -1632,30 +1790,48 @@ function loadStudentsTable() {
   fetch('/api/admin/siswa')
     .then(res => res.json())
     .then(list => {
-      const tbody = document.getElementById("student-list-table-body");
-      if (!tbody) return;
-      tbody.innerHTML = "";
-      if (!list || list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-light);">Belum ada data siswa.</td></tr>`;
-        return;
-      }
-      list.forEach(s => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${s.id}</td>
-            <td><strong>${s.nis}</strong></td>
-            <td>${s.nama}</td>
-            <td><span class="badge badge-info">${s.nama_kelas || '-'}</span></td>
-            <td><span class="badge badge-success">Aktif</span></td>
-            <td style="text-align:center;">
-              <button class="btn btn-secondary" onclick="openDetailSiswaModal(${s.id})" style="padding: 3px 7px; font-size:11.5px;">👁️ Detail</button>
-              <button class="btn btn-secondary" onclick="printSingleStudentCard(${s.id})" style="padding: 3px 7px; font-size:11.5px;">🪪 Kartu</button>
-              <button class="btn btn-danger" onclick="deleteSiswa(${s.id})" style="padding: 3px 7px; font-size:11.5px;">🗑️ Hapus</button>
-            </td>
-          </tr>
-        `;
-      });
+      stateSiswaList = list || [];
+      filterMasterSiswaTable();
     });
+}
+
+function filterMasterSiswaTable() {
+  const q = (document.getElementById("filter-siswa-search")?.value || "").toLowerCase().trim();
+  const kelas = (document.getElementById("filter-siswa-kelas")?.value || "").toLowerCase().trim();
+
+  const filtered = stateSiswaList.filter(s => {
+    const matchQ = !q || (s.nis || "").toLowerCase().includes(q) || (s.nama || "").toLowerCase().includes(q);
+    const matchKelas = !kelas || (s.nama_kelas || "").toLowerCase().includes(kelas);
+    return matchQ && matchKelas;
+  });
+
+  renderStudentsTable(filtered);
+}
+
+function renderStudentsTable(list) {
+  const tbody = document.getElementById("student-list-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  if (!list || list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-light);">Tidak ada data siswa yang cocok.</td></tr>`;
+    return;
+  }
+  list.forEach(s => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${s.id}</td>
+        <td><strong>${s.nis}</strong></td>
+        <td>${s.nama}</td>
+        <td><span class="badge badge-info">${s.nama_kelas || '-'}</span></td>
+        <td><span class="badge badge-success">Aktif</span></td>
+        <td style="text-align:center;">
+          <button class="btn btn-secondary" onclick="openDetailSiswaModal(${s.id})" style="padding: 3px 7px; font-size:11.5px;">👁️ Detail</button>
+          <button class="btn btn-secondary" onclick="printSingleStudentCard(${s.id})" style="padding: 3px 7px; font-size:11.5px;">🪪 Kartu</button>
+          <button class="btn btn-danger" onclick="deleteSiswa(${s.id})" style="padding: 3px 7px; font-size:11.5px;">🗑️ Hapus</button>
+        </td>
+      </tr>
+    `;
+  });
 }
 
 function handleAddSiswa() {
@@ -1699,34 +1875,45 @@ function loadMasterKelasPage() {
   fetch('/api/admin/kelas')
     .then(res => res.json())
     .then(list => {
-      const tbody = document.getElementById("class-list-table-body");
-      if (!tbody) return;
-      tbody.innerHTML = "";
-      if (!list || list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-light);">Belum ada data kelas.</td></tr>`;
-        return;
-      }
-      list.forEach(k => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${k.id}</td>
-            <td><strong>${k.nama_kelas}</strong></td>
-            <td><span class="badge badge-info">${k.total_siswa || 0} Siswa</span></td>
-            <td style="text-align:center;">
-              <button class="btn btn-secondary" onclick="openDetailKelasModal(${k.id})" style="font-size:11.5px; padding:3px 7px;">
-                👁️ Detail Kelas
-              </button>
-              <button class="btn btn-secondary" onclick="printClassCards(${k.id})" style="font-size:11.5px; padding:3px 7px;">
-                🪪 Kartu Kelas
-              </button>
-              <button class="btn btn-danger" onclick="deleteKelas(${k.id})" style="font-size:11.5px; padding:3px 7px;">
-                🗑️ Hapus
-              </button>
-            </td>
-          </tr>
-        `;
-      });
+      stateKelasList = list || [];
+      filterMasterKelasTable();
     });
+}
+
+function filterMasterKelasTable() {
+  const q = (document.getElementById("filter-kelas-search")?.value || "").toLowerCase().trim();
+  const filtered = stateKelasList.filter(k => !q || (k.nama_kelas || "").toLowerCase().includes(q));
+  renderMasterKelasTable(filtered);
+}
+
+function renderMasterKelasTable(list) {
+  const tbody = document.getElementById("class-list-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  if (!list || list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-light);">Tidak ada data kelas yang cocok.</td></tr>`;
+    return;
+  }
+  list.forEach(k => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${k.id}</td>
+        <td><strong>${k.nama_kelas}</strong></td>
+        <td><span class="badge badge-info">${k.total_siswa || 0} Siswa</span></td>
+        <td style="text-align:center;">
+          <button class="btn btn-secondary" onclick="openDetailKelasModal(${k.id})" style="font-size:11.5px; padding:3px 7px;">
+            👁️ Detail Kelas
+          </button>
+          <button class="btn btn-secondary" onclick="printClassCards(${k.id})" style="font-size:11.5px; padding:3px 7px;">
+            🪪 Kartu Kelas
+          </button>
+          <button class="btn btn-danger" onclick="deleteKelas(${k.id})" style="font-size:11.5px; padding:3px 7px;">
+            🗑️ Hapus
+          </button>
+        </td>
+      </tr>
+    `;
+  });
 }
 
 function handleAddKelas() {
@@ -1764,31 +1951,42 @@ function loadMasterMapelPage() {
   fetch('/api/admin/mapel')
     .then(res => res.json())
     .then(list => {
-      const tbody = document.getElementById("mapel-list-table-body");
-      if (!tbody) return;
-      tbody.innerHTML = "";
-      if (!list || list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-light);">Belum ada data mata pelajaran.</td></tr>`;
-        return;
-      }
-      list.forEach(m => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${m.id}</td>
-            <td><span class="badge badge-info">${m.kode_mapel}</span></td>
-            <td><strong>${m.nama_mapel}</strong></td>
-            <td style="text-align:center;">
-              <button class="btn btn-secondary" onclick="openDetailMapelModal(${m.id})" style="font-size:11.5px; padding:3px 7px;">
-                👁️ Detail
-              </button>
-              <button class="btn btn-danger" onclick="deleteMapel(${m.id})" style="font-size:11.5px; padding:3px 7px;">
-                🗑️ Hapus
-              </button>
-            </td>
-          </tr>
-        `;
-      });
+      stateMapelList = list || [];
+      filterMasterMapelTable();
     });
+}
+
+function filterMasterMapelTable() {
+  const q = (document.getElementById("filter-mapel-search")?.value || "").toLowerCase().trim();
+  const filtered = stateMapelList.filter(m => !q || (m.kode_mapel || "").toLowerCase().includes(q) || (m.nama_mapel || "").toLowerCase().includes(q));
+  renderMasterMapelTable(filtered);
+}
+
+function renderMasterMapelTable(list) {
+  const tbody = document.getElementById("mapel-list-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  if (!list || list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-light);">Tidak ada data mata pelajaran yang cocok.</td></tr>`;
+    return;
+  }
+  list.forEach(m => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${m.id}</td>
+        <td><span class="badge badge-info">${m.kode_mapel}</span></td>
+        <td><strong>${m.nama_mapel}</strong></td>
+        <td style="text-align:center;">
+          <button class="btn btn-secondary" onclick="openDetailMapelModal(${m.id})" style="font-size:11.5px; padding:3px 7px;">
+            👁️ Detail
+          </button>
+          <button class="btn btn-danger" onclick="deleteMapel(${m.id})" style="font-size:11.5px; padding:3px 7px;">
+            🗑️ Hapus
+          </button>
+        </td>
+      </tr>
+    `;
+  });
 }
 
 function handleAddMapel() {
@@ -2924,44 +3122,74 @@ let currentGuruAssignments = [];
 let activeAssignGuruId = null;
 
 function loadMasterGuruPage() {
+  fetch('/api/admin/kelas').then(r => r.json()).then(kelasList => {
+    const sel = document.getElementById("filter-guru-kelas");
+    if (sel) {
+      sel.innerHTML = `<option value="">Semua Kelas Penempatan</option>`;
+      (kelasList || []).forEach(k => sel.innerHTML += `<option value="${k.nama_kelas}">${k.nama_kelas}</option>`);
+    }
+  }).catch(() => {});
+
   fetch('/api/admin/guru')
     .then(res => res.json())
     .then(data => {
-      const tbody = document.getElementById("guru-list-table-body");
-      if (!tbody) return;
-      tbody.innerHTML = "";
-
-      if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-light);">Belum ada data guru terdaftar.</td></tr>`;
-        return;
-      }
-
-      data.forEach(g => {
-        let penempatanHtml = `<span style="font-size:12px; color:var(--text-light); font-style:italic;">Belum ditugaskan</span>`;
-        if (g.assignments && g.assignments.length > 0) {
-          penempatanHtml = g.assignments.map(a => 
-            `<span class="badge badge-info" style="margin:2px; display:inline-block;">${a.nama_kelas} ➔ ${a.nama_mapel}</span>`
-          ).join(' ');
-        }
-
-        tbody.innerHTML += `
-          <tr>
-            <td>${g.id}</td>
-            <td><strong>${g.nip}</strong></td>
-            <td>${g.nama}</td>
-            <td>${g.email || '-'}</td>
-            <td>${penempatanHtml}</td>
-            <td style="text-align:center;">
-              <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="openAssignGuruModal(${g.id}, '${g.nama}')">🎯 Penempatan</button>
-              <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="handleDeleteGuru(${g.id})">🗑️ Hapus</button>
-            </td>
-          </tr>
-        `;
-      });
+      stateGuruList = data || [];
+      filterMasterGuruTable();
     })
     .catch(err => {
       showToast("Gagal memuat data guru: " + err.message);
     });
+}
+
+function filterMasterGuruTable() {
+  const q = (document.getElementById("filter-guru-search")?.value || "").toLowerCase().trim();
+  const kelas = (document.getElementById("filter-guru-kelas")?.value || "").toLowerCase().trim();
+
+  const filtered = stateGuruList.filter(g => {
+    const matchQ = !q || (g.nip || "").toLowerCase().includes(q) || (g.nama || "").toLowerCase().includes(q) || (g.email || "").toLowerCase().includes(q);
+    let matchKelas = true;
+    if (kelas) {
+      matchKelas = g.assignments && g.assignments.some(a => (a.nama_kelas || "").toLowerCase().includes(kelas));
+    }
+    return matchQ && matchKelas;
+  });
+
+  renderMasterGuruTable(filtered);
+}
+
+function renderMasterGuruTable(data) {
+  const tbody = document.getElementById("guru-list-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-light);">Tidak ada data guru yang cocok.</td></tr>`;
+    return;
+  }
+
+  data.forEach(g => {
+    let penempatanHtml = `<span style="font-size:12px; color:var(--text-light); font-style:italic;">Belum ditugaskan</span>`;
+    if (g.assignments && g.assignments.length > 0) {
+      penempatanHtml = g.assignments.map(a => 
+        `<span class="badge badge-info" style="margin:2px; display:inline-block;">${a.nama_kelas} ➔ ${a.nama_mapel}</span>`
+      ).join(' ');
+    }
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${g.id}</td>
+        <td><strong>${g.nip}</strong></td>
+        <td>${g.nama}</td>
+        <td>${g.email || '-'}</td>
+        <td>${penempatanHtml}</td>
+        <td style="text-align:center;">
+          <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="openDetailGuruModal(${g.id})">👁️ Detail</button>
+          <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="openAssignGuruModal(${g.id}, '${g.nama}')">🎯 Penempatan</button>
+          <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="handleDeleteGuru(${g.id})">🗑️ Hapus</button>
+        </td>
+      </tr>
+    `;
+  });
 }
 
 function handleAddGuru() {
