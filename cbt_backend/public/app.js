@@ -106,7 +106,9 @@ function quickFillLogin(u, p, autoSubmit = true) {
   if (pInput) pInput.value = p;
   showToast(`🔑 Autofill ${u.toUpperCase()} siap...`);
   if (autoSubmit) {
-    handleLogin();
+    setTimeout(() => {
+      handleLogin();
+    }, 50);
   } else if (pInput) {
     pInput.focus();
   }
@@ -114,12 +116,13 @@ function quickFillLogin(u, p, autoSubmit = true) {
 
 function toggleWebPasswordVisibility(inputId, btn) {
   const input = document.getElementById(inputId);
+  if (!input) return;
   if (input.type === "password") {
     input.type = "text";
-    btn.innerText = "🙈";
+    if (btn) btn.innerText = "🙈";
   } else {
     input.type = "password";
-    btn.innerText = "👁️";
+    if (btn) btn.innerText = "👁️";
   }
 }
 

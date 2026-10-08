@@ -11,7 +11,7 @@ function securityHeaders(req, res, next) {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:;"
+    "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com;"
   );
   res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
   next();
