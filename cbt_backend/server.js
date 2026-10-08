@@ -44,6 +44,14 @@ app.get('/kartu-ujian/print/:siswaId', (req, res, next) => {
 // Mount All API Routes
 app.use('/api', routes);
 
+// SPA Fallback Routing for Web Portal (HTML5 History API support)
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/sertifikat') || req.path.startsWith('/kartu-ujian')) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // 404 Not Found Middleware
 app.use(notFoundHandler);
 

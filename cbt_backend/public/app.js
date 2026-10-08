@@ -58,8 +58,58 @@ let studentSyncTimer = null;
 let studentSecondsRemaining = 0;
 
 // ==========================================
-// KENDALI UTAMA LAYAR & TABS (SPA LOGIC)
+// KENDALI UTAMA LAYAR & TABS (SPA & URL ROUTING)
 // ==========================================
+const ROUTE_MAP = {
+  'db-admin': '/admin/dashboard',
+  'master-guru': '/admin/guru',
+  'master-siswa': '/admin/siswa',
+  'master-kelas': '/admin/kelas',
+  'master-mapel': '/admin/mapel',
+  'db-guru': '/guru/dashboard',
+  'workspace-guru': '/guru/workspace',
+  'soal': '/guru/bank-soal',
+  'ujian': '/guru/sesi-ujian',
+  'monitoring': '/guru/monitoring',
+  'grading': '/guru/koreksi-essay',
+  'rekap': '/guru/rekap-nilai'
+};
+
+function updateUrlPath(pageId, pushState = true) {
+  try {
+    if (pageId === 'login') {
+      if (pushState && window.location.pathname !== '/login') {
+        window.history.pushState({ pageId: 'login' }, '', '/login');
+      }
+      return;
+    }
+    if (pageId === 'siswa') {
+      if (pushState && window.location.pathname !== '/siswa/dashboard') {
+        window.history.pushState({ pageId: 'siswa' }, '', '/siswa/dashboard');
+      }
+      return;
+    }
+    const targetPath = ROUTE_MAP[pageId];
+    if (targetPath && pushState && window.location.pathname !== targetPath) {
+      window.history.pushState({ pageId }, '', targetPath);
+    }
+  } catch (err) {
+    console.warn("URL routing update notice:", err);
+  }
+}
+
+function getPageIdFromPath(pathname) {
+  if (!pathname) return null;
+  const cleanPath = pathname.toLowerCase().replace(/\/+$/, '');
+  for (const [pageId, routePath] of Object.entries(ROUTE_MAP)) {
+    if (routePath === cleanPath) return pageId;
+  }
+  if (cleanPath.startsWith('/admin')) return 'db-admin';
+  if (cleanPath.startsWith('/guru')) return 'db-guru';
+  if (cleanPath.startsWith('/siswa')) return 'siswa';
+  return null;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   try {
     applyInitialTheme();
@@ -80,11 +130,24 @@ document.addEventListener("DOMContentLoaded", () => {
   localStorage.removeItem("cbt_token");
   localStorage.removeItem("cbt_user");
   localStorage.removeItem("cbt_profil");
-  showLoginLayout();
+  showLoginLayout(false);
+  updateUrlPath('login', true);
 });
 
+window.addEventListener('popstate', (e) => {
+  const pathPageId = getPageIdFromPath(window.location.pathname);
+  if (!currentUser) {
+    showLoginLayout(false);
+  } else if (pathPageId) {
+    if (pathPageId === 'siswa') {
+      siswaInit();
+    } else {
+      showPage(pathPageId, null, true);
+    }
+  }
+});
 
-function showLoginLayout() {
+function showLoginLayout(pushState = true) {
   document.querySelectorAll(".modal").forEach(m => m.style.display = "none");
   const overlay = document.getElementById("mobile-overlay");
   if (overlay) overlay.style.display = "none";
@@ -98,6 +161,8 @@ function showLoginLayout() {
   if (appContainer) appContainer.style.display = "none";
   const siswaContainer = document.getElementById("siswa-container");
   if (siswaContainer) siswaContainer.style.display = "none";
+
+  updateUrlPath('login', pushState);
 }
 
 function handleLoginSubmit(event) {
@@ -241,15 +306,18 @@ function showAppLayout() {
 
     const menuGuru = document.querySelectorAll(".menu-guru");
     const menuAdmin = document.querySelectorAll(".menu-admin");
+    const initialPage = getPageIdFromPath(window.location.pathname);
 
     if (currentUser.role === 'admin') {
       menuGuru.forEach(el => el.style.display = "none");
       menuAdmin.forEach(el => el.style.display = "block");
-      showPage('db-admin');
+      const targetPage = (initialPage && (initialPage.startsWith('master') || initialPage === 'db-admin')) ? initialPage : 'db-admin';
+      showPage(targetPage, null, false);
     } else {
       menuGuru.forEach(el => el.style.display = "block");
       menuAdmin.forEach(el => el.style.display = "none");
-      showPage('db-guru');
+      const targetPage = (initialPage && !initialPage.startsWith('master') && initialPage !== 'siswa') ? initialPage : 'db-guru';
+      showPage(targetPage, null, false);
     }
   }
 }
@@ -267,14 +335,17 @@ function toggleSidebar(open) {
   }
 }
 
-function showPage(pageId, evt) {
+function showPage(pageId, evt, skipPush = false) {
   if (evt && evt.preventDefault) {
     evt.preventDefault();
   }
+
+  const pageTarget = document.getElementById(`page-${pageId}`);
+  if (!pageTarget) return;
+
   const pages = document.querySelectorAll(".page-view");
   pages.forEach(p => p.classList.remove("active"));
-
-  document.getElementById(`page-${pageId}`).classList.add("active");
+  pageTarget.classList.add("active");
 
   const menuItems = document.querySelectorAll(".menu-item");
   menuItems.forEach(item => item.classList.remove("active"));
@@ -284,6 +355,11 @@ function showPage(pageId, evt) {
 
   // Tutup sidebar otomatis di mobile setelah klik menu
   toggleSidebar(false);
+
+  // Perbarui URL browser (HTML5 History API)
+  if (!skipPush) {
+    updateUrlPath(pageId, true);
+  }
 
   // Load Data
   if (pageId === 'db-guru') loadDashboardGuru();
