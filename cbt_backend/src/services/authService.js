@@ -17,11 +17,17 @@ class AuthService {
     const cleanInput = username.toString().trim();
     let user = await userRepo.findByUsername(cleanInput);
 
-    // If not found by username, check if input matches student NIS
+    // If not found by username, check if input matches student NIS or teacher NIP
     if (!user) {
       const student = await userRepo.findStudentByNis(cleanInput);
       if (student && student.user_id) {
         user = await userRepo.findById(student.user_id);
+      }
+    }
+    if (!user) {
+      const teacher = await userRepo.findTeacherByNip(cleanInput);
+      if (teacher && teacher.user_id) {
+        user = await userRepo.findById(teacher.user_id);
       }
     }
 

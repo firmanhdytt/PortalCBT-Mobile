@@ -78,6 +78,10 @@ class UserRepository {
     return await db.getOne('SELECT * FROM guru WHERE id = ?', [id]);
   }
 
+  async findTeacherByNip(nip) {
+    return await db.getOne('SELECT * FROM guru WHERE nip = ?', [nip]);
+  }
+
   /**
    * Update nama & email pengguna secara tersinkronisasi antar tabel
    */

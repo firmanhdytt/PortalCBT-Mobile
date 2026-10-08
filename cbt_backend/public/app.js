@@ -761,6 +761,8 @@ function renderQuestionsTable(list) {
   });
 }
 
+let teacherWorkspaceAssignments = [];
+
 function openCreateBankSoalModal() {
   const kSelect = document.getElementById("modal-bank-kelas");
   const mSelect = document.getElementById("modal-bank-mapel");
@@ -775,6 +777,7 @@ function openCreateBankSoalModal() {
       mSelect.innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
 
       if (res.is_admin) {
+        kSelect.onchange = null;
         (res.kelas || []).forEach(k => {
           kSelect.innerHTML += `<option value="${k.id}">${k.nama_kelas}</option>`;
         });
@@ -782,28 +785,23 @@ function openCreateBankSoalModal() {
           mSelect.innerHTML += `<option value="${m.id}">${m.nama_mapel}</option>`;
         });
       } else if (res.assignments) {
+        teacherWorkspaceAssignments = res.assignments || [];
         const uniqueKelas = [];
         const kelasMap = new Set();
-        const uniqueMapel = [];
-        const mapelMap = new Set();
 
-        res.assignments.forEach(a => {
+        teacherWorkspaceAssignments.forEach(a => {
           if (a.kelas_id && !kelasMap.has(a.kelas_id)) {
             kelasMap.add(a.kelas_id);
             uniqueKelas.push({ id: a.kelas_id, nama_kelas: a.nama_kelas });
-          }
-          if (a.mapel_id && !mapelMap.has(a.mapel_id)) {
-            mapelMap.add(a.mapel_id);
-            uniqueMapel.push({ id: a.mapel_id, nama_mapel: a.nama_mapel });
           }
         });
 
         uniqueKelas.forEach(k => {
           kSelect.innerHTML += `<option value="${k.id}">${k.nama_kelas}</option>`;
         });
-        uniqueMapel.forEach(m => {
-          mSelect.innerHTML += `<option value="${m.id}">${m.nama_mapel}</option>`;
-        });
+
+        kSelect.onchange = updateBankSoalMapelOptions;
+        updateBankSoalMapelOptions();
       }
       openModal('create-bank-modal');
     })
@@ -827,6 +825,30 @@ function openCreateBankSoalModal() {
         openModal('create-bank-modal');
       });
     });
+}
+
+function updateBankSoalMapelOptions() {
+  const kSelect = document.getElementById("modal-bank-kelas");
+  const mSelect = document.getElementById("modal-bank-mapel");
+  if (!kSelect || !mSelect) return;
+
+  const selectedKelasId = kSelect.value;
+  mSelect.innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
+
+  if (!selectedKelasId) return;
+
+  const filteredMapels = teacherWorkspaceAssignments.filter(a => String(a.kelas_id) === String(selectedKelasId));
+  const addedMapelIds = new Set();
+  filteredMapels.forEach(a => {
+    if (a.mapel_id && !addedMapelIds.has(a.mapel_id)) {
+      addedMapelIds.add(a.mapel_id);
+      mSelect.innerHTML += `<option value="${a.mapel_id}">${a.nama_mapel}</option>`;
+    }
+  });
+
+  if (addedMapelIds.size === 1) {
+    mSelect.value = Array.from(addedMapelIds)[0];
+  }
 }
 
 function handleCreateBankSoal() {

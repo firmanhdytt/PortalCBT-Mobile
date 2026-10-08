@@ -303,12 +303,13 @@ class MasterRepository {
   }
 
   async isGuruAssigned(guruUserId, kelasId, mapelId) {
+    if (!guruUserId || !kelasId || !mapelId) return false;
     const row = await db.getOne(`
       SELECT gkm.id 
       FROM guru_kelas_mapel gkm
       JOIN guru g ON gkm.guru_id = g.id
       WHERE g.user_id = ? AND gkm.kelas_id = ? AND gkm.mapel_id = ?
-    `, [guruUserId, kelasId, mapelId]);
+    `, [parseInt(guruUserId), parseInt(kelasId), parseInt(mapelId)]);
     return !!row;
   }
 }
