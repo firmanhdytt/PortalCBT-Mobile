@@ -267,7 +267,10 @@ function toggleSidebar(open) {
   }
 }
 
-function showPage(pageId) {
+function showPage(pageId, evt) {
+  if (evt && evt.preventDefault) {
+    evt.preventDefault();
+  }
   const pages = document.querySelectorAll(".page-view");
   pages.forEach(p => p.classList.remove("active"));
 
