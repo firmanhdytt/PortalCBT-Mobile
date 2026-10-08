@@ -1455,13 +1455,8 @@ function renderGradingItems(list) {
             </button>
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
   });
-}
-    .catch(err => {
-      container.innerHTML = `<p style="color:var(--danger); text-align:center; padding:20px;">Gagal memuat jawaban essay: ${err.message}</p>`;
-    });
 }
 
 function submitGrade(jawabanId, ujianId, maxBobot) {
