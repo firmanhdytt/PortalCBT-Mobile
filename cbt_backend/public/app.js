@@ -27,7 +27,13 @@ window.fetch = function(url, options = {}) {
 
 let currentUser = null;
 let currentProfil = null;
-let editingSoalId = null;
+// Helper untuk memastikan data berupa Array (mencegah error .filter / .map)
+function ensureArray(data) {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  if (data && Array.isArray(data.result)) return data.result;
+  return [];
+}
 
 // State Cache untuk Admin & Guru Tables
 let stateGuruList = [];
@@ -713,7 +719,11 @@ function loadQuestionsForBankSoal(bankId) {
   fetch(`/api/guru/soal/${bankId}`)
     .then(res => res.json())
     .then(list => {
-      stateQuestionsList = list || [];
+      stateQuestionsList = ensureArray(list);
+      filterBankSoalQuestions();
+    })
+    .catch(() => {
+      stateQuestionsList = [];
       filterBankSoalQuestions();
     });
 }
@@ -1082,31 +1092,33 @@ function syncUjianTargetClass() {
 
 function loadUjianPage() {
   fetch('/api/guru/bank-soal').then(res => res.json()).then(list => {
-    stateBankSoalList = list || [];
+    const arr = ensureArray(list);
+    stateBankSoalList = arr;
     const select = document.getElementById("ujian-bank-soal");
     if (select) {
       select.innerHTML = "";
-      if (!list || list.length === 0) {
+      if (arr.length === 0) {
         select.innerHTML = `<option value="">-- Belum Ada Bank Soal --</option>`;
       } else {
-        list.forEach(b => {
+        arr.forEach(b => {
           select.innerHTML += `<option value="${b.id}" data-kelas-id="${b.kelas_id || ''}" data-kelas-nama="${b.nama_kelas || '-'}" data-mapel-nama="${b.nama_mapel || '-'}">${b.judul} — [${b.nama_kelas || 'Semua Kelas'} | ${b.nama_mapel || 'Mapel'}]</option>`;
         });
       }
       select.onchange = syncUjianTargetClass;
     }
     syncUjianTargetClass();
-  });
+  }).catch(() => {});
 
   fetch('/api/admin/kelas').then(res => res.json()).then(list => {
-    stateKelasList = list || [];
+    const arr = ensureArray(list);
+    stateKelasList = arr;
     const select = document.getElementById("ujian-kelas");
     if (select) {
       select.innerHTML = "";
-      list.forEach(k => select.innerHTML += `<option value="${k.id}">${k.nama_kelas}</option>`);
+      arr.forEach(k => select.innerHTML += `<option value="${k.id}">${k.nama_kelas}</option>`);
     }
     syncUjianTargetClass();
-  });
+  }).catch(() => {});
 
   loadExamsTable();
 }
@@ -1115,7 +1127,11 @@ function loadExamsTable() {
   fetch('/api/guru/ujian')
     .then(res => res.json())
     .then(list => {
-      stateUjianList = list || [];
+      stateUjianList = ensureArray(list);
+      filterUjianTable();
+    })
+    .catch(() => {
+      stateUjianList = [];
       filterUjianTable();
     });
 }
@@ -1357,10 +1373,12 @@ function loadEssayAnswers(ujianId) {
   fetch(`/api/guru/nilai-essay/list/${ujianId}`)
     .then(res => res.json())
     .then(list => {
-      stateGradingList = list || [];
+      stateGradingList = ensureArray(list);
       filterGradingItems();
     })
     .catch(err => {
+      stateGradingList = [];
+      filterGradingItems();
       container.innerHTML = `<p style="color:var(--danger); text-align:center; padding:20px;">Gagal memuat jawaban essay: ${err.message}</p>`;
     });
 }
@@ -1560,15 +1578,16 @@ function loadRekapNilai(ujianId) {
     fetch(`/api/guru/sertifikat/ujian/${ujianId}`).then(res => res.json()).catch(() => ({ data: [] }))
   ])
     .then(([list, certRes]) => {
-      stateRekapList = list || [];
-      const certs = (certRes && certRes.data) || [];
+      const arr = ensureArray(list);
+      stateRekapList = arr;
+      const certs = (certRes && Array.isArray(certRes.data)) ? certRes.data : [];
       stateRekapCertMap = {};
       certs.forEach(c => {
         stateRekapCertMap[c.siswa_id] = c;
       });
 
-      if (list && list.length > 0) {
-        const kkm = list[0].kkm ?? 75;
+      if (arr.length > 0) {
+        const kkm = arr[0].kkm ?? 75;
         const kkmEl = document.getElementById("rekap-kkm-info");
         if (kkmEl) kkmEl.innerText = `KKM: ${kkm}`;
       }
@@ -1576,6 +1595,8 @@ function loadRekapNilai(ujianId) {
       filterRekapTable();
     })
     .catch(err => {
+      stateRekapList = [];
+      filterRekapTable();
       tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:25px; color:var(--danger);">Gagal memuat rekap: ${err.message}</td></tr>`;
     });
 }
@@ -1766,17 +1787,22 @@ function loadDashboardAdmin() {
     fetch('/api/admin/guru').then(r => r.json()).catch(() => []),
     fetch('/api/admin/kelas').then(r => r.json()).catch(() => []),
     fetch('/api/admin/mapel').then(r => r.json()).catch(() => [])
-  ]).then(([siswaList, guruList, kelasList, mapelList]) => {
-    document.getElementById("admin-stat-siswa").innerText = (siswaList || []).length;
-    document.getElementById("admin-stat-guru").innerText = (guruList || []).length;
-    document.getElementById("admin-stat-kelas").innerText = (kelasList || []).length;
-    document.getElementById("admin-stat-mapel").innerText = (mapelList || []).length;
+  ]).then(([sRes, gRes, kRes, mRes]) => {
+    const siswaList = ensureArray(sRes);
+    const guruList = ensureArray(gRes);
+    const kelasList = ensureArray(kRes);
+    const mapelList = ensureArray(mRes);
+
+    if (document.getElementById("admin-stat-siswa")) document.getElementById("admin-stat-siswa").innerText = siswaList.length;
+    if (document.getElementById("admin-stat-guru")) document.getElementById("admin-stat-guru").innerText = guruList.length;
+    if (document.getElementById("admin-stat-kelas")) document.getElementById("admin-stat-kelas").innerText = kelasList.length;
+    if (document.getElementById("admin-stat-mapel")) document.getElementById("admin-stat-mapel").innerText = mapelList.length;
 
     // Render Overview Kelas Body
     const kelasBody = document.getElementById("admin-dashboard-kelas-body");
     if (kelasBody) {
       kelasBody.innerHTML = "";
-      if (!kelasList || kelasList.length === 0) {
+      if (kelasList.length === 0) {
         kelasBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-light);">Belum ada kelas terdaftar.</td></tr>`;
       } else {
         kelasList.forEach(k => {
@@ -1799,7 +1825,7 @@ function loadDashboardAdmin() {
     const guruBody = document.getElementById("admin-dashboard-guru-body");
     if (guruBody) {
       guruBody.innerHTML = "";
-      if (!guruList || guruList.length === 0) {
+      if (guruList.length === 0) {
         guruBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--text-light);">Belum ada guru terdaftar.</td></tr>`;
       } else {
         guruList.forEach(g => {
@@ -1845,7 +1871,11 @@ function loadStudentsTable() {
   fetch('/api/admin/siswa')
     .then(res => res.json())
     .then(list => {
-      stateSiswaList = list || [];
+      stateSiswaList = ensureArray(list);
+      filterMasterSiswaTable();
+    })
+    .catch(() => {
+      stateSiswaList = [];
       filterMasterSiswaTable();
     });
 }
@@ -1896,7 +1926,7 @@ function handleAddSiswa() {
   const password = document.getElementById("siswa-password").value.trim();
 
   if (!nis || !nama) {
-    showToast("NIS dan Nama Siswa wajib diisi!");
+    showToast("⚠️ NIS dan Nama Siswa wajib diisi!");
     return;
   }
 
@@ -1905,24 +1935,35 @@ function handleAddSiswa() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nis, nama, kelas_id, password })
   })
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal menambah siswa"); });
+    return res.json();
+  })
   .then(res => {
     showToast("✓ " + (res.message || "Siswa berhasil didaftarkan!"));
     document.getElementById("siswa-nis").value = "";
     document.getElementById("siswa-nama").value = "";
     document.getElementById("siswa-password").value = "";
+    closeModal('modal-add-siswa');
     loadStudentsTable();
-  });
+    loadDashboardAdmin();
+  })
+  .catch(err => showToast("❌ " + err.message));
 }
 
 function deleteSiswa(id) {
   if (confirm("Apakah Anda yakin ingin menghapus siswa ini beserta akunnya?")) {
     fetch(`/api/admin/siswa/${id}`, { method: 'DELETE' })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal menghapus siswa"); });
+        return res.json();
+      })
       .then(res => {
         showToast("✓ " + (res.message || "Siswa berhasil dihapus!"));
         loadStudentsTable();
-      });
+        loadDashboardAdmin();
+      })
+      .catch(err => showToast("❌ " + err.message));
   }
 }
 
@@ -1930,7 +1971,11 @@ function loadMasterKelasPage() {
   fetch('/api/admin/kelas')
     .then(res => res.json())
     .then(list => {
-      stateKelasList = list || [];
+      stateKelasList = ensureArray(list);
+      filterMasterKelasTable();
+    })
+    .catch(() => {
+      stateKelasList = [];
       filterMasterKelasTable();
     });
 }
@@ -1974,7 +2019,7 @@ function renderMasterKelasTable(list) {
 function handleAddKelas() {
   const nama = document.getElementById("kelas-nama").value.trim();
   if (!nama) {
-    showToast("Nama kelas wajib diisi!");
+    showToast("⚠️ Nama kelas wajib diisi!");
     return;
   }
 
@@ -1983,22 +2028,33 @@ function handleAddKelas() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nama_kelas: nama })
   })
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal membuat kelas"); });
+    return res.json();
+  })
   .then(res => {
     showToast("✓ " + (res.message || "Kelas berhasil dibuat!"));
     document.getElementById("kelas-nama").value = "";
+    closeModal('modal-add-kelas');
     loadMasterKelasPage();
-  });
+    loadDashboardAdmin();
+  })
+  .catch(err => showToast("❌ " + err.message));
 }
 
 function deleteKelas(id) {
   if (confirm("Apakah Anda yakin ingin menghapus kelas ini?")) {
     fetch(`/api/admin/kelas/${id}`, { method: 'DELETE' })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal menghapus kelas"); });
+        return res.json();
+      })
       .then(res => {
         showToast("✓ " + (res.message || "Kelas berhasil dihapus!"));
         loadMasterKelasPage();
-      });
+        loadDashboardAdmin();
+      })
+      .catch(err => showToast("❌ " + err.message));
   }
 }
 
@@ -2006,7 +2062,11 @@ function loadMasterMapelPage() {
   fetch('/api/admin/mapel')
     .then(res => res.json())
     .then(list => {
-      stateMapelList = list || [];
+      stateMapelList = ensureArray(list);
+      filterMasterMapelTable();
+    })
+    .catch(() => {
+      stateMapelList = [];
       filterMasterMapelTable();
     });
 }
@@ -2049,7 +2109,7 @@ function handleAddMapel() {
   const nama = document.getElementById("mapel-nama").value.trim();
 
   if (!kode || !nama) {
-    showToast("Kode dan Nama Mapel wajib diisi!");
+    showToast("⚠️ Kode dan Nama Mapel wajib diisi!");
     return;
   }
 
@@ -2058,13 +2118,19 @@ function handleAddMapel() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ kode_mapel: kode, nama_mapel: nama })
   })
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal menyimpan mapel"); });
+    return res.json();
+  })
   .then(res => {
     showToast("✓ " + (res.message || "Mapel berhasil disimpan!"));
     document.getElementById("mapel-kode").value = "";
     document.getElementById("mapel-nama").value = "";
+    closeModal('modal-add-mapel');
     loadMasterMapelPage();
-  });
+    loadDashboardAdmin();
+  })
+  .catch(err => showToast("❌ " + err.message));
 }
 
 function deleteMapel(id) {
@@ -3181,17 +3247,19 @@ function loadMasterGuruPage() {
     const sel = document.getElementById("filter-guru-kelas");
     if (sel) {
       sel.innerHTML = `<option value="">Semua Kelas Penempatan</option>`;
-      (kelasList || []).forEach(k => sel.innerHTML += `<option value="${k.nama_kelas}">${k.nama_kelas}</option>`);
+      (ensureArray(kelasList)).forEach(k => sel.innerHTML += `<option value="${k.nama_kelas}">${k.nama_kelas}</option>`);
     }
   }).catch(() => {});
 
   fetch('/api/admin/guru')
     .then(res => res.json())
     .then(data => {
-      stateGuruList = data || [];
+      stateGuruList = ensureArray(data);
       filterMasterGuruTable();
     })
     .catch(err => {
+      stateGuruList = [];
+      filterMasterGuruTable();
       showToast("Gagal memuat data guru: " + err.message);
     });
 }
@@ -3254,7 +3322,7 @@ function handleAddGuru() {
   const password = document.getElementById("guru-password").value.trim();
 
   if (!nip || !nama) {
-    showToast("NIP dan Nama Guru wajib diisi!");
+    showToast("⚠️ NIP dan Nama Guru wajib diisi!");
     return;
   }
 
@@ -3263,20 +3331,21 @@ function handleAddGuru() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nip, nama, email, password })
   })
-  .then(res => res.json())
   .then(res => {
-    if (res.message) {
-      showToast("✓ " + res.message);
-      document.getElementById("guru-nip").value = "";
-      document.getElementById("guru-nama").value = "";
-      document.getElementById("guru-email").value = "";
-      document.getElementById("guru-password").value = "";
-      loadMasterGuruPage();
-    } else {
-      showToast(res.message || "Gagal menambahkan guru!");
-    }
+    if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal menambahkan guru"); });
+    return res.json();
   })
-  .catch(err => showToast("Error: " + err.message));
+  .then(res => {
+    showToast("✓ " + (res.message || "Guru berhasil ditambahkan!"));
+    document.getElementById("guru-nip").value = "";
+    document.getElementById("guru-nama").value = "";
+    document.getElementById("guru-email").value = "";
+    document.getElementById("guru-password").value = "";
+    closeModal('modal-add-guru');
+    loadMasterGuruPage();
+    loadDashboardAdmin();
+  })
+  .catch(err => showToast("❌ " + err.message));
 }
 
 function openAssignGuruModal(guruId, guruNama) {
@@ -3360,25 +3429,33 @@ function handleSaveGuruAssignments() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ assignments: currentGuruAssignments })
   })
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal menyimpan penempatan"); });
+    return res.json();
+  })
   .then(res => {
     showToast("✓ " + (res.message || "Penempatan berhasil disimpan!"));
     closeModal('modal-assign-guru');
     loadMasterGuruPage();
+    loadDashboardAdmin();
   })
-  .catch(err => showToast("Error: " + err.message));
+  .catch(err => showToast("❌ " + err.message));
 }
 
 function handleDeleteGuru(guruId) {
   if (!confirm("Apakah Anda yakin ingin menghapus data guru ini beserta akunnya?")) return;
 
   fetch(`/api/admin/guru/${guruId}`, { method: 'DELETE' })
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal menghapus guru"); });
+      return res.json();
+    })
     .then(res => {
       showToast("✓ " + (res.message || "Guru berhasil dihapus!"));
       loadMasterGuruPage();
+      loadDashboardAdmin();
     })
-    .catch(err => showToast("Error: " + err.message));
+    .catch(err => showToast("❌ " + err.message));
 }
 
 function loadWorkspaceGuruPage() {
