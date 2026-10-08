@@ -14,7 +14,13 @@ class ApiClient {
       : _client = client ?? http.Client(),
         _session = session;
 
-  String get baseUrl => 'http://${_session.getServerIp()}/api';
+  String get baseUrl {
+    final host = _session.getServerIp();
+    if (host.startsWith('http://') || host.startsWith('https://')) {
+      return host.endsWith('/api') ? host : '$host/api';
+    }
+    return 'https://$host/api';
+  }
 
   Map<String, String> _buildHeaders({bool isJson = true}) {
     final headers = <String, String>{};

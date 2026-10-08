@@ -4,12 +4,15 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String defaultIp = "10.0.2.2:3000"; // Loopback Android Emulator ke Localhost PC
+  static const String defaultIp = "backend-cbt.solusibersamaa.com"; // Production Live Server
   
   static Future<String> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
     final ip = prefs.getString('server_ip') ?? defaultIp;
-    return "http://$ip/api";
+    if (ip.startsWith('http://') || ip.startsWith('https://')) {
+      return ip.endsWith('/api') ? ip : '$ip/api';
+    }
+    return "https://$ip/api";
   }
 
   static Future<void> setServerIp(String ip) async {

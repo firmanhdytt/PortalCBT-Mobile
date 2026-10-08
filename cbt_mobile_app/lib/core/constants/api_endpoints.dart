@@ -1,5 +1,5 @@
 class ApiEndpoints {
-  static const String defaultHost = "10.0.2.2:3000";
+  static const String defaultHost = "backend-cbt.solusibersamaa.com";
 
   // Auth
   static const String login = '/auth/login';
