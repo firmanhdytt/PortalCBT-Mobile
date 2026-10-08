@@ -724,15 +724,20 @@ class _ExamPageState extends State<ExamPage> with WidgetsBindingObserver {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   color: Colors.white,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Tipe: ${q.jenisSoal}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
-                      _buildSyncStatusChip(),
-                      Text('Bobot: ${q.bobot}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
-                    ],
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Tipe: ${q.jenisSoal}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                        const SizedBox(width: 12),
+                        _buildSyncStatusChip(),
+                        const SizedBox(width: 12),
+                        Text('Bobot: ${q.bobot}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                      ],
+                    ),
                   ),
                 ),
 
@@ -825,47 +830,52 @@ class _ExamPageState extends State<ExamPage> with WidgetsBindingObserver {
                 // Bottom Navigation Controls
                 Container(
                   color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ElevatedButton(
-                        onPressed: _controller.hasPrev ? () => _controller.prevQuestion() : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppColors.textPrimary,
-                          side: const BorderSide(color: AppColors.border),
-                          elevation: 0,
-                        ),
-                        child: Text(_controller.allowBackNavigation ? 'Sebelum' : 'Terkunci'),
-                      ),
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: isRagu,
-                            activeColor: AppColors.doubtful,
-                            onChanged: (_) {
-                              _controller.toggleDoubt(q.id);
-                            },
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _controller.hasPrev ? () => _controller.prevQuestion() : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: AppColors.textPrimary,
+                            side: const BorderSide(color: AppColors.border),
+                            elevation: 0,
                           ),
-                          const Text(
-                            'Ragu-ragu',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.doubtful),
-                          ),
-                        ],
-                      ),
-                      ElevatedButton(
-                        onPressed: _controller.hasNext
-                            ? () => _controller.nextQuestion()
-                            : () => _confirmFinishExam(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
+                          child: Text(_controller.allowBackNavigation ? 'Sebelum' : 'Terkunci'),
                         ),
-                        child: Text(_controller.hasNext ? 'Lanjut' : 'Selesai'),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: isRagu,
+                              activeColor: AppColors.doubtful,
+                              onChanged: (_) {
+                                _controller.toggleDoubt(q.id);
+                              },
+                            ),
+                            const Text(
+                              'Ragu-ragu',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.doubtful),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _controller.hasNext
+                              ? () => _controller.nextQuestion()
+                              : () => _confirmFinishExam(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                          ),
+                          child: Text(_controller.hasNext ? 'Lanjut' : 'Selesai'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 

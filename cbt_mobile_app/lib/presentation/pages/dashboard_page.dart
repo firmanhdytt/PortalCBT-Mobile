@@ -1,12 +1,16 @@
 import 'dart:convert';
-import '../../core/utils/type_parser.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/constants/api_endpoints.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
+import '../../core/utils/type_parser.dart';
 import '../../domain/entities/student.dart';
 import '../../domain/entities/exam.dart';
+import '../../domain/entities/user_profile.dart';
+import '../../domain/entities/app_notification.dart';
+import '../../domain/entities/user_preference.dart';
 import '../../data/datasources/exam_remote_datasource.dart';
 import '../../data/datasources/exam_local_datasource.dart';
 import '../../data/repositories/exam_repository_impl.dart';
@@ -14,10 +18,6 @@ import '../state/dashboard_controller.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/error_state_widget.dart';
-import '../../domain/entities/user_profile.dart';
-import '../../domain/entities/app_notification.dart';
-import '../../domain/entities/user_preference.dart';
-import '../../core/constants/api_endpoints.dart';
 import 'login_page.dart';
 import 'exam_page.dart';
 
@@ -44,7 +44,9 @@ class _DashboardPageState extends State<DashboardPage> {
   UserProfile? _userProfile;
   int _unreadNotifCount = 0;
   UserPreference? _userPreference;
+  List<AppNotification> _notificationsList = [];
   bool _isInitialized = false;
+  int _currentBottomIndex = 0; // 0: Ujian, 1: Kartu Ujian, 2: Sertifikat, 3: Notifikasi, 4: Profil
 
   @override
   void initState() {
@@ -53,13 +55,12 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   void _initStudentAndController() async {
-    // Resolve Student object
     if (widget.student != null) {
       _currentStudent = widget.student!;
     } else {
       final s = widget.siswa!;
       _currentStudent = Student(
-        id: s['id'] is int ? s['id'] : int.tryParse(s['id'].toString()) ?? 0,
+        id: s['id'] is int ? s['id'] : int.tryParse(s['id']?.toString() ?? '0') ?? 0,
         nama: s['nama']?.toString() ?? 'Siswa',
         nis: s['nis']?.toString() ?? '-',
         kelasId: s['kelas_id'] is int ? s['kelas_id'] : int.tryParse(s['kelas_id']?.toString() ?? '0') ?? 0,
@@ -77,7 +78,6 @@ class _DashboardPageState extends State<DashboardPage> {
     _controller = DashboardController(_examRepo);
     _controller.addListener(_onControllerChanged);
 
-    // Check if there is an interrupted exam session that can be resumed
     final savedExam = await _localDataSource.getActiveIncompleteExam();
 
     if (mounted) {
@@ -120,10 +120,12 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       final unread = await _examRepo.getUnreadNotificationCount();
       final pref = await _examRepo.getUserPreferences();
+      final notifs = await _examRepo.getNotifications();
       if (mounted) {
         setState(() {
           _unreadNotifCount = unread;
           _userPreference = pref;
+          _notificationsList = notifs;
         });
       }
     } catch (_) {}
@@ -297,7 +299,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               children: [
                                 Icon(Icons.error_outline, color: Colors.white, size: 20),
                                 SizedBox(width: 8),
-                                Text('Token ujian salah atau sudah tidak berlaku!'),
+                                Expanded(child: Text('Token ujian salah atau sudah tidak berlaku!')),
                               ],
                             ),
                             backgroundColor: AppColors.danger,
@@ -362,7 +364,7 @@ class _DashboardPageState extends State<DashboardPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      Navigator.pop(context); // Close loading modal
+      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gagal menyiapkan soal: ${e.toString().replaceFirst('Exception: ', '')}'),
@@ -371,345 +373,6 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
       );
     }
-  }
-
-  void _showStudentCardDialog() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(20),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(strokeWidth: 2.5),
-                SizedBox(width: 16),
-                Text('Memuat Kartu Ujian...'),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    await _controller.loadStudentCard();
-    if (!mounted) return;
-    Navigator.pop(context); // Close loading
-
-    final card = _controller.studentCard;
-    if (card == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal memuat kartu ujian dari server.'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
-      return;
-    }
-
-    // Decode QR Code Base64
-    Widget qrWidget;
-    try {
-      final base64String = card.qrDataUrl.contains(',')
-          ? card.qrDataUrl.split(',').last
-          : card.qrDataUrl;
-      final bytes = base64Decode(base64String);
-      qrWidget = Image.memory(bytes, width: 110, height: 110, fit: BoxFit.contain);
-    } catch (_) {
-      qrWidget = Container(
-        width: 110,
-        height: 110,
-        color: const Color(0xFFF1F5F9),
-        child: const Icon(Icons.qr_code_2_rounded, size: 60, color: AppColors.primary),
-      );
-    }
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        contentPadding: const EdgeInsets.all(20),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.school_rounded, color: AppColors.primary, size: 28),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'KARTU PESERTA CBT',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 13,
-                                color: AppColors.primaryDark,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            Text(
-                              'TA ${card.tahunAjaran}',
-                              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: qrWidget,
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            card.noPeserta,
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            card.nama,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text('NIS: ${card.nis}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                          Text('Kelas: ${card.kelas}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                          Text('${card.ruang} / ${card.sesi}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 8),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Jadwal Ujian Terdaftar:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textPrimary),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (card.jadwalUjian.isEmpty)
-                  const Text('Tidak ada jadwal ujian aktif.', style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.grey))
-                else
-                  ...card.jadwalUjian.map((ex) => Container(
-                        margin: const EdgeInsets.only(bottom: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                '${ex.namaMapel} (${ex.namaUjian})',
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Text(
-                              '${ex.durasiMenit} mnt',
-                              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                      )),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Tutup'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showCertificatesDialog() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(20),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(strokeWidth: 2.5),
-                SizedBox(width: 16),
-                Text('Memuat Sertifikat...'),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    await _controller.loadCertificates();
-    if (!mounted) return;
-    Navigator.pop(context); // Close loading
-
-    final certs = _controller.certificates;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.workspace_premium_rounded, color: Color(0xFFD97706), size: 24),
-            SizedBox(width: 8),
-            Text('Sertifikat Kelulusan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: certs.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.info_outline_rounded, size: 48, color: Colors.grey),
-                      SizedBox(height: 12),
-                      Text(
-                        'Belum Ada Sertifikat',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Sertifikat digital diterbitkan secara otomatis setelah Anda dinyatakan LULUS ujian oleh guru.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: certs.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, idx) {
-                    final c = certs[idx];
-                    return Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0FDF4),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF86EFAC)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                c.certificateNumber,
-                                style: const TextStyle(
-                                  fontFamily: 'monospace',
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 11,
-                                  color: Color(0xFF15803D),
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFDCFCE7),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  'Skor: ${c.nilaiAkhir}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11,
-                                    color: Color(0xFF15803D),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            c.namaMapel,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                          Text(
-                            c.namaUjian,
-                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Status: ${c.statusKelulusan} (KKM ${c.kkm})',
-                            style: const TextStyle(fontSize: 10, color: Color(0xFF166534), fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-        ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Tutup'),
-          ),
-        ],
-      ),
-    );
   }
 
   String _getInitial(String name) {
@@ -748,7 +411,25 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  void _showProfileDialog() async {
+  // --- PHOTO UPLOAD MODAL FEATURE ---
+  void _showUploadAvatarDialog() {
+    String? selectedBase64;
+    String? previewDataUrl;
+    bool isUploading = false;
+    String? errorMessage;
+
+    // Sample high-resolution character preset avatar base64 data URLs
+    final List<Map<String, String>> presets = [
+      {
+        'title': 'Siswa L',
+        'data': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAG1JREFUeNrs2CEOgDAUBVD2/odmVZ2gKCwI/mKSuWbNms3X9v7Y67Fvn9eN58/j4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pz/wd4BwBsG2uW6BfKygAAAABJRU5ErkJggg=='
+      },
+      {
+        'title': 'Siswa P',
+        'data': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAG1JREFUeNrs2CEKACAMBVD3/od2c4Ki0CD4CybNmnXr1q1bt27dunXr1q1bt27dunXr1q1bt27dunXr1q1bt27dunXr1q1bt27dunXr1q1bt27dunXr1q1bt27dunXr1q1bt27dunXr/wd4BwB3wWteYl2eJAAAAABJRU5ErkJggg=='
+      },
+    ];
+
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -756,121 +437,275 @@ class _DashboardPageState extends State<DashboardPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Row(
             children: [
-              Icon(Icons.account_circle_rounded, color: AppColors.primary, size: 28),
+              Icon(Icons.add_a_photo_rounded, color: AppColors.primary),
               SizedBox(width: 8),
-              Text('Profil Siswa', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('Unggah Foto Profil', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ],
           ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 76,
-                  height: 76,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+                const Text(
+                  'Pilih foto karakter preset atau masukkan data gambar avatar profil Anda:',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 16),
+
+                // Preview Avatar
+                Center(
+                  child: Container(
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: previewDataUrl != null
+                        ? Image.memory(
+                            base64Decode(previewDataUrl!.split(',').last),
+                            fit: BoxFit.cover,
+                          )
+                        : _buildAvatarWidget(size: 88, fontSize: 32),
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: _buildAvatarWidget(size: 76, fontSize: 28),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  _userProfile?.nama ?? _currentStudent.nama,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  textAlign: TextAlign.center,
-                ),
-                Text(
-                  'NIS: ${_userProfile?.nis ?? _currentStudent.nis} • Kelas: ${_userProfile?.namaKelas ?? _currentStudent.namaKelas}',
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                ),
-                if (_userProfile?.email != null && _userProfile!.email.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    _userProfile!.email,
-                    style: const TextStyle(fontSize: 11, color: AppColors.primary),
+                const SizedBox(height: 16),
+
+                if (errorMessage != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEE2E2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFFCA5A5)),
+                    ),
+                    child: Text(
+                      errorMessage!,
+                      style: const TextStyle(color: Color(0xFFDC2626), fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                ],
-                const SizedBox(height: 20),
+
+                const Text('Pilih Karakter Preset Avatar:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: presets.map((p) {
+                    final isSel = selectedBase64 == p['data'];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: InkWell(
+                        onTap: () {
+                          setDialogState(() {
+                            selectedBase64 = p['data'];
+                            previewDataUrl = p['data'];
+                            errorMessage = null;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(30),
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSel ? AppColors.primary : Colors.grey.shade300,
+                              width: isSel ? 3 : 1,
+                            ),
+                          ),
+                          child: CircleAvatar(
+                            radius: 22,
+                            backgroundColor: AppColors.primaryLight,
+                            child: Text(p['title']!, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                const SizedBox(height: 16),
                 const Divider(),
                 const SizedBox(height: 8),
-                ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.lock_reset_rounded, color: AppColors.primary),
-                  title: const Text('Ganti Kata Sandi', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                  subtitle: const Text('Perbarui kata sandi akun CBT Anda', style: TextStyle(fontSize: 11)),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _showChangePasswordDialog();
-                  },
-                ),
-                if (_userProfile != null && _userProfile!.hasAvatar)
-                  ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
-                    title: const Text('Hapus Foto Profil', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600, fontSize: 13)),
-                    subtitle: const Text('Kembali ke inisial nama standar', style: TextStyle(fontSize: 11)),
-                    onTap: () async {
-                      final nav = Navigator.of(ctx);
-                      final messenger = ScaffoldMessenger.of(context);
-                      try {
-                        await _examRepo.deleteAvatar();
-                        await _loadData();
-                        if (mounted) {
-                          nav.pop();
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Foto profil berhasil dihapus.'),
-                              backgroundColor: AppColors.success,
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text('Gagal menghapus avatar: $e'),
-                              backgroundColor: AppColors.danger,
-                            ),
-                          );
-                        }
-                      }
-                    },
+
+                // Custom Base64 Image String Input Dialog
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.code_rounded, size: 18),
+                  label: const Text('Input Berkas / Base64 Kustom'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 42),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.palette_outlined, color: AppColors.primary),
-                  title: const Text('Tema & Aksesibilitas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  subtitle: Text(
-                    'Tema: ${_userPreference?.theme.toUpperCase() ?? "SYSTEM"} | Kontras: ${_userPreference?.highContrast == true ? "TINGGI" : "NORMAL"}',
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                  trailing: const Icon(Icons.chevron_right, size: 20),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _showThemePreferencesDialog();
+                  onPressed: () {
+                    _showCustomBase64InputDialog((inputVal) {
+                      setDialogState(() {
+                        selectedBase64 = inputVal;
+                        previewDataUrl = inputVal;
+                        errorMessage = null;
+                      });
+                    });
                   },
                 ),
               ],
             ),
           ),
           actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Batal', style: TextStyle(color: AppColors.textSecondary)),
+            ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Tutup'),
+              onPressed: (selectedBase64 == null || isUploading)
+                  ? null
+                  : () async {
+                      setDialogState(() => isUploading = true);
+                      try {
+                        await _examRepo.uploadAvatar(selectedBase64!);
+                        await _loadData();
+                        if (mounted) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Foto profil berhasil diunggah!'),
+                              backgroundColor: AppColors.success,
+                            ),
+                          );
+                        }
+                      } catch (err) {
+                        setDialogState(() {
+                          isUploading = false;
+                          errorMessage = err.toString().replaceAll('Exception: ', '');
+                        });
+                      }
+                    },
+              child: isUploading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Simpan Foto'),
             ),
           ],
         ),
       ),
     );
+  }
+
+  void _showCustomBase64InputDialog(Function(String) onConfirm) {
+    final textCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Input Data Base64 / Data URL', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: textCtrl,
+          maxLines: 4,
+          style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+          decoration: InputDecoration(
+            hintText: 'Tempelkan data:image/png;base64,... disini',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          ElevatedButton(
+            onPressed: () {
+              final v = textCtrl.text.trim();
+              if (v.isNotEmpty) {
+                onConfirm(v);
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Gunakan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- DELETE NOTIFICATION FEATURE ---
+  Future<void> _deleteNotification(int id) async {
+    try {
+      final ok = await _examRepo.deleteNotification(id);
+      if (ok) {
+        final unread = await _examRepo.getUnreadNotificationCount();
+        final updatedList = await _examRepo.getNotifications();
+        if (mounted) {
+          setState(() {
+            _unreadNotifCount = unread;
+            _notificationsList = updatedList;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Notifikasi berhasil dihapus.'),
+              backgroundColor: AppColors.success,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menghapus notifikasi: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteAllReadNotifications() async {
+    final readList = _notificationsList.where((n) => n.isRead).toList();
+    if (readList.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tidak ada notifikasi terbaca untuk dihapus.'),
+          backgroundColor: AppColors.textSecondary,
+        ),
+      );
+      return;
+    }
+
+    int count = 0;
+    for (final n in readList) {
+      try {
+        final ok = await _examRepo.deleteNotification(n.id);
+        if (ok) count++;
+      } catch (_) {}
+    }
+
+    final unread = await _examRepo.getUnreadNotificationCount();
+    final updatedList = await _examRepo.getNotifications();
+    if (mounted) {
+      setState(() {
+        _unreadNotifCount = unread;
+        _notificationsList = updatedList;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$count notifikasi terbaca berhasil dihapus.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
   }
 
   void _showChangePasswordDialog() {
@@ -1024,174 +859,6 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  void _showNotificationBottomSheet() async {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Container(
-          height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                decoration: const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: AppColors.border)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.notifications_active_rounded, color: AppColors.primary),
-                        SizedBox(width: 8),
-                        Text('Pusat Notifikasi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        try {
-                          await _examRepo.markAllNotificationsAsRead();
-                          final unread = await _examRepo.getUnreadNotificationCount();
-                          setSheetState(() {});
-                          if (mounted) {
-                            setState(() {
-                              _unreadNotifCount = unread;
-                            });
-                          }
-                        } catch (_) {}
-                      },
-                      child: const Text('Tandai Dibaca', style: TextStyle(fontSize: 12)),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Content List
-              Expanded(
-                child: FutureBuilder<List<AppNotification>>(
-                  future: _examRepo.getNotifications(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    final list = snapshot.data ?? [];
-                    if (list.isEmpty) {
-                      return const Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.notifications_off_outlined, size: 48, color: Colors.grey),
-                            SizedBox(height: 12),
-                            Text('Tidak Ada Notifikasi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            SizedBox(height: 4),
-                            Text('Pemberitahuan ujian dan nilai akan muncul di sini.',
-                                style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                          ],
-                        ),
-                      );
-                    }
-
-                    return ListView.separated(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: list.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (context, idx) {
-                        final notif = list[idx];
-                        IconData icon;
-                        Color iconColor;
-                        switch (notif.type) {
-                          case 'success':
-                            icon = Icons.check_circle_rounded;
-                            iconColor = AppColors.success;
-                            break;
-                          case 'warning':
-                            icon = Icons.warning_rounded;
-                            iconColor = AppColors.warning;
-                            break;
-                          case 'danger':
-                            icon = Icons.error_rounded;
-                            iconColor = AppColors.danger;
-                            break;
-                          case 'info':
-                          default:
-                            icon = Icons.info_rounded;
-                            iconColor = AppColors.primary;
-                        }
-
-                        return ListTile(
-                          tileColor: notif.isRead ? Colors.transparent : AppColors.primary.withOpacity(0.05),
-                          leading: CircleAvatar(
-                            backgroundColor: iconColor.withOpacity(0.12),
-                            child: Icon(icon, color: iconColor, size: 20),
-                          ),
-                          title: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  notif.title,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: notif.isRead ? FontWeight.normal : FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              if (!notif.isRead)
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 4),
-                              Text(notif.message, style: const TextStyle(fontSize: 12)),
-                              const SizedBox(height: 4),
-                              if (notif.createdAt != null)
-                                Text(
-                                  notif.createdAt!,
-                                  style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-                                ),
-                            ],
-                          ),
-                          onTap: () async {
-                            if (!notif.isRead) {
-                              await _examRepo.markNotificationAsRead(notif.id);
-                              final unread = await _examRepo.getUnreadNotificationCount();
-                              setSheetState(() {});
-                              if (mounted) {
-                                setState(() {
-                                  _unreadNotifCount = unread;
-                                });
-                              }
-                            }
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   void _showThemePreferencesDialog() {
     String currentTheme = _userPreference?.theme ?? 'system';
     bool highContrast = _userPreference?.highContrast ?? false;
@@ -1277,134 +944,73 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (!_isInitialized) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.assignment_turned_in_rounded, size: 24, color: Colors.white),
-            SizedBox(width: 8),
-            Text(
-              AppStrings.appName,
-              style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5),
+  // --- TAB 0: BERANDA UJIAN (HOME EXAMS) ---
+  Widget _buildHomeExamsTab() {
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      color: AppColors.primary,
+      child: Column(
+        children: [
+          // Student Profile Header Banner
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.primary, AppColors.primaryDark],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(28),
+                bottomRight: Radius.circular(28),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x332563EB),
+                  blurRadius: 16,
+                  offset: Offset(0, 8),
+                ),
+              ],
             ),
-          ],
-        ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          // In-App Notification Center (Phase 10)
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                tooltip: 'Pusat Notifikasi',
-                onPressed: _showNotificationBottomSheet,
-              ),
-              if (_unreadNotifCount > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: () => setState(() => _currentBottomIndex = 4),
+                  borderRadius: BorderRadius.circular(26),
                   child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.danger,
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
                       shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
                     ),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text(
-                      _unreadNotifCount > 9 ? '9+' : '$_unreadNotifCount',
-                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: _buildAvatarWidget(),
                   ),
                 ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Perbarui Data',
-            onPressed: _loadData,
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: AppStrings.btnLogout,
-            onPressed: _handleLogout,
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadData,
-        color: AppColors.primary,
-        child: Column(
-          children: [
-            // Student Profile Header Banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryDark],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(28),
-                  bottomRight: Radius.circular(28),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x332563EB),
-                    blurRadius: 16,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  InkWell(
-                    onTap: _showProfileDialog,
-                    borderRadius: BorderRadius.circular(26),
-                    child: Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: _buildAvatarWidget(),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _currentStudent.nama,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.3,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _currentStudent.nama,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.3,
                         ),
-                        const SizedBox(height: 6),
-                        Row(
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      // Scrollable Row for NIS and Kelas to completely avoid overflow
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1431,11 +1037,15 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        Row(
+                      ),
+                      const SizedBox(height: 10),
+                      // Scrollable Action Buttons Row to completely avoid overflow on any mobile screen
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
                           children: [
                             InkWell(
-                              onTap: _showStudentCardDialog,
+                              onTap: () => setState(() => _currentBottomIndex = 1),
                               borderRadius: BorderRadius.circular(8),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -1469,7 +1079,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             const SizedBox(width: 8),
                             InkWell(
-                              onTap: _showCertificatesDialog,
+                              onTap: () => setState(() => _currentBottomIndex = 2),
                               borderRadius: BorderRadius.circular(8),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -1497,7 +1107,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             const SizedBox(width: 8),
                             InkWell(
-                              onTap: _showProfileDialog,
+                              onTap: () => setState(() => _currentBottomIndex = 4),
                               borderRadius: BorderRadius.circular(8),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -1525,239 +1135,1092 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Interrupted Session Recovery Card (if any)
+          if (_resumableExam != null)
+            Container(
+              margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFF59E0B)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.amber.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.history_toggle_off_rounded, color: Color(0xFFD97706), size: 22),
+                      SizedBox(width: 8),
+                      Text(
+                        'Sesi Ujian Sedang Berjalan',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF92400E)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Ujian "${_resumableExam!['nama_ujian']}" belum selesai. Jawaban offline Anda tersimpan aman.',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF78350F)),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.play_circle_fill, size: 18),
+                          label: const Text('LANJUTKAN UJIAN'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD97706),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: _resumeSavedSession,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: _discardSavedSession,
+                        child: const Text('Batalkan', style: TextStyle(color: Color(0xFF92400E))),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
 
-            // Interrupted Session Recovery Card (if any)
-            if (_resumableExam != null)
-              Container(
-                margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFF59E0B)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.amber.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.history_toggle_off_rounded, color: Color(0xFFD97706), size: 22),
-                        SizedBox(width: 8),
-                        Text(
-                          'Sesi Ujian Sedang Berjalan',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF92400E)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Ujian "${_resumableExam!['nama_ujian']}" belum selesai. Jawaban offline Anda tersimpan aman.',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF78350F)),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            icon: const Icon(Icons.play_circle_fill, size: 18),
-                            label: const Text('LANJUTKAN UJIAN'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD97706),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            onPressed: _resumeSavedSession,
+          // Main Content Area
+          Expanded(
+            child: _controller.isLoading
+                ? const LoadingIndicator(message: 'Memuat jadwal ujian...')
+                : _controller.errorMessage != null
+                    ? ErrorStateWidget(
+                        message: _controller.errorMessage!,
+                        onRetry: _loadData,
+                      )
+                    : _controller.isEmpty
+                        ? EmptyStateWidget(
+                            title: AppStrings.noExamsAvailable,
+                            description:
+                                'Belum ada sesi ujian yang dirilis untuk kelas Anda. Tarik layar ke bawah untuk memperbarui data.',
+                            onAction: _loadData,
+                            actionText: 'Perbarui Halaman',
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(20),
+                            itemCount: _controller.exams.length,
+                            itemBuilder: (context, index) {
+                              final exam = _controller.exams[index];
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: AppColors.border),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF0F172A).withOpacity(0.04),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              exam.namaUjian,
+                                              style: const TextStyle(
+                                                fontSize: 17,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.textPrimary,
+                                                letterSpacing: -0.3,
+                                              ),
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFECFDF5),
+                                              borderRadius: BorderRadius.circular(20),
+                                              border: Border.all(color: const Color(0xFFA7F3D0)),
+                                            ),
+                                            child: const Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                CircleAvatar(radius: 3, backgroundColor: AppColors.success),
+                                                SizedBox(width: 4),
+                                                Text(
+                                                  'AKTIF',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: Color(0xFF047857),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 8,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF1F5F9),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.timer_outlined, size: 14, color: AppColors.textSecondary),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  '${exam.durasiMenit} Menit',
+                                                  style: const TextStyle(
+                                                    color: AppColors.textPrimary,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF1F5F9),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.assignment_outlined, size: 14, color: AppColors.textSecondary),
+                                                SizedBox(width: 4),
+                                                Text(
+                                                  'PG & Essay',
+                                                  style: TextStyle(
+                                                    color: AppColors.textPrimary,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 18),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        height: 46,
+                                        child: ElevatedButton(
+                                          onPressed: () => _showTokenDialog(exam),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.primary,
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            elevation: 2,
+                                            shadowColor: AppColors.primary.withOpacity(0.3),
+                                          ),
+                                          child: const Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                'IKUTI UJIAN',
+                                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                              ),
+                                              SizedBox(width: 6),
+                                              Icon(Icons.arrow_forward_rounded, size: 18),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- TAB 1: KARTU PESERTA UJIAN (STUDENT EXAM CARD) ---
+  Widget _buildStudentCardTab() {
+    final card = _controller.studentCard;
+
+    if (_controller.isLoadingCard) {
+      return const LoadingIndicator(message: 'Memuat Kartu Peserta Ujian...');
+    }
+
+    if (card == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.badge_outlined, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text('Kartu Ujian Belum Tersedia', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              const Text('Ketuk tombol di bawah untuk memuat kartu ujian dari server.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Muat Kartu Ujian'),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                onPressed: () => _controller.loadStudentCard(),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    Widget qrWidget;
+    try {
+      final base64String = card.qrDataUrl.contains(',')
+          ? card.qrDataUrl.split(',').last
+          : card.qrDataUrl;
+      final bytes = base64Decode(base64String);
+      qrWidget = Image.memory(bytes, width: 120, height: 120, fit: BoxFit.contain);
+    } catch (_) {
+      qrWidget = Container(
+        width: 120,
+        height: 120,
+        color: const Color(0xFFF1F5F9),
+        child: const Icon(Icons.qr_code_2_rounded, size: 64, color: AppColors.primary),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          // Card Box Container
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // School Header
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  color: AppColors.primary,
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        backgroundColor: Colors.white,
+                        radius: 20,
+                        child: Icon(Icons.school_rounded, color: AppColors.primary, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'KARTU PESERTA CBT RESMI',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
+                            ),
+                            Text(
+                              'TAHUN AJARAN ${card.tahunAjaran}',
+                              style: const TextStyle(color: Colors.white70, fontSize: 11),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        TextButton(
-                          onPressed: _discardSavedSession,
-                          child: const Text('Batalkan', style: TextStyle(color: Color(0xFF92400E))),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      // QR & Student Info
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: qrWidget,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryLight,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    card.noPeserta,
+                                    style: const TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  card.nama,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text('NIS: ${card.nis}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                Text('Kelas: ${card.kelas}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                Text('Lokasi: ${card.ruang} / ${card.sesi}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primaryDark)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+                      const Divider(),
+                      const SizedBox(height: 12),
+
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Jadwal Ujian Terdaftar:',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
                         ),
-                      ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      if (card.jadwalUjian.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text('Tidak ada jadwal ujian aktif.', style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey)),
+                        )
+                      else
+                        ...card.jadwalUjian.map((ex) => Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(ex.namaMapel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                                        Text(ex.namaUjian, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryLight,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      '${ex.durasiMenit} Menit',
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- TAB 2: SERTIFIKAT DIGITAL (DIGITAL CERTIFICATES) ---
+  Widget _buildCertificatesTab() {
+    final certs = _controller.certificates;
+
+    if (_controller.isLoadingCerts) {
+      return const LoadingIndicator(message: 'Memuat Sertifikat Kompetensi Digital...');
+    }
+
+    if (certs.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.workspace_premium_outlined, size: 72, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text('Belum Ada Sertifikat Kelulusan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              const Text(
+                'Sertifikat kompetensi digital akan diterbitkan secara otomatis setelah Anda dinyatakan LULUS ujian oleh guru pengampu.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Muat Ulang'),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                onPressed: () => _controller.loadCertificates(),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: certs.length,
+      itemBuilder: (context, idx) {
+        final c = certs[idx];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0FDF4),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFF86EFAC), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.green.withOpacity(0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      c.certificateNumber,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Color(0xFF15803D),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Skor Akhir: ${c.nilaiAkhir}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Color(0xFF15803D),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                c.namaMapel,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
+              ),
+              Text(
+                c.namaUjian,
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFBBF7D0)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.verified_rounded, color: Color(0xFF166534), size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Status: ${c.statusKelulusan} (Batas KKM ${c.kkm})',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF166534), fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),
               ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-            // Main Content Area
-            Expanded(
-              child: _controller.isLoading
-                  ? const LoadingIndicator(message: 'Memuat jadwal ujian...')
-                  : _controller.errorMessage != null
-                      ? ErrorStateWidget(
-                          message: _controller.errorMessage!,
-                          onRetry: _loadData,
-                        )
-                      : _controller.isEmpty
-                          ? EmptyStateWidget(
-                              title: AppStrings.noExamsAvailable,
-                              description:
-                                  'Belum ada sesi ujian yang dirilis untuk kelas Anda. Tarik layar ke bawah untuk memperbarui data.',
-                              onAction: _loadData,
-                              actionText: 'Perbarui Halaman',
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.all(20),
-                              itemCount: _controller.exams.length,
-                              itemBuilder: (context, index) {
-                                final exam = _controller.exams[index];
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: AppColors.border),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF0F172A).withOpacity(0.04),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(20),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                exam.namaUjian,
-                                                style: const TextStyle(
-                                                  fontSize: 17,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: AppColors.textPrimary,
-                                                  letterSpacing: -0.3,
-                                                ),
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFECFDF5),
-                                                borderRadius: BorderRadius.circular(20),
-                                                border: Border.all(color: const Color(0xFFA7F3D0)),
-                                              ),
-                                              child: const Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  CircleAvatar(radius: 3, backgroundColor: AppColors.success),
-                                                  SizedBox(width: 4),
-                                                  Text(
-                                                    'AKTIF',
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.w800,
-                                                      color: Color(0xFF047857),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Wrap(
-                                          spacing: 8,
-                                          runSpacing: 8,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFF1F5F9),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  const Icon(Icons.timer_outlined, size: 14, color: AppColors.textSecondary),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    '${exam.durasiMenit} Menit',
-                                                    style: const TextStyle(
-                                                      color: AppColors.textPrimary,
-                                                      fontSize: 12,
-                                                      fontWeight: FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFF1F5F9),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: const Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(Icons.assignment_outlined, size: 14, color: AppColors.textSecondary),
-                                                  SizedBox(width: 4),
-                                                  Text(
-                                                    'PG & Essay',
-                                                    style: TextStyle(
-                                                      color: AppColors.textPrimary,
-                                                      fontSize: 12,
-                                                      fontWeight: FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 18),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          height: 46,
-                                          child: ElevatedButton(
-                                            onPressed: () => _showTokenDialog(exam),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppColors.primary,
-                                              foregroundColor: Colors.white,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              elevation: 2,
-                                              shadowColor: AppColors.primary.withOpacity(0.3),
-                                            ),
-                                            child: const Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Text(
-                                                  'IKUTI UJIAN',
-                                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                                ),
-                                                SizedBox(width: 6),
-                                                Icon(Icons.arrow_forward_rounded, size: 18),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
+  // --- TAB 3: PUSAT NOTIFIKASI & FITUR HAPUS (NOTIFICATIONS & DELETE) ---
+  Widget _buildNotificationsTab() {
+    return Column(
+      children: [
+        // Action Bar Top
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          color: Colors.white,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total: ${_notificationsList.length} Notifikasi',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+              ),
+              Row(
+                children: [
+                  TextButton.icon(
+                    icon: const Icon(Icons.done_all_rounded, size: 16),
+                    label: const Text('Tandai Dibaca', style: TextStyle(fontSize: 11)),
+                    onPressed: () async {
+                      try {
+                        await _examRepo.markAllNotificationsAsRead();
+                        _loadData();
+                      } catch (_) {}
+                    },
+                  ),
+                  TextButton.icon(
+                    icon: const Icon(Icons.delete_sweep_rounded, size: 16, color: AppColors.danger),
+                    label: const Text('Hapus Dibaca', style: TextStyle(fontSize: 11, color: AppColors.danger)),
+                    onPressed: _deleteAllReadNotifications,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+
+        // Notifications List
+        Expanded(
+          child: _notificationsList.isEmpty
+              ? const EmptyStateWidget(
+                  title: 'Tidak Ada Notifikasi',
+                  description: 'Pemberitahuan hasil ujian dan pengumuman akan muncul di sini.',
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: _notificationsList.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, idx) {
+                    final notif = _notificationsList[idx];
+                    IconData icon;
+                    Color iconColor;
+                    switch (notif.type) {
+                      case 'success':
+                        icon = Icons.check_circle_rounded;
+                        iconColor = AppColors.success;
+                        break;
+                      case 'warning':
+                        icon = Icons.warning_rounded;
+                        iconColor = AppColors.warning;
+                        break;
+                      case 'danger':
+                        icon = Icons.error_rounded;
+                        iconColor = AppColors.danger;
+                        break;
+                      case 'info':
+                      default:
+                        icon = Icons.info_rounded;
+                        iconColor = AppColors.primary;
+                    }
+
+                    return ListTile(
+                      tileColor: notif.isRead ? Colors.transparent : AppColors.primary.withOpacity(0.05),
+                      leading: CircleAvatar(
+                        backgroundColor: iconColor.withOpacity(0.12),
+                        child: Icon(icon, color: iconColor, size: 22),
+                      ),
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              notif.title,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: notif.isRead ? FontWeight.normal : FontWeight.bold,
+                              ),
                             ),
+                          ),
+                          if (!notif.isRead)
+                            Container(
+                              width: 8,
+                              height: 8,
+                              margin: const EdgeInsets.only(left: 6),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                        ],
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text(notif.message, style: const TextStyle(fontSize: 12)),
+                          const SizedBox(height: 4),
+                          if (notif.createdAt != null)
+                            Text(
+                              notif.createdAt!,
+                              style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                            ),
+                        ],
+                      ),
+                      // Individual Delete Notification Icon
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.grey, size: 20),
+                        tooltip: 'Hapus Notifikasi',
+                        onPressed: () => _deleteNotification(notif.id),
+                      ),
+                      onTap: () async {
+                        if (!notif.isRead) {
+                          await _examRepo.markNotificationAsRead(notif.id);
+                          _loadData();
+                        }
+                      },
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  // --- TAB 4: PROFIL SISWA & UPLOAD FOTO PROFIL (PROFILE & AVATAR UPLOAD) ---
+  Widget _buildProfileTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          // Large Profile Card Header
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.border),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Avatar with Camera Icon Overlay
+                Stack(
+                  children: [
+                    Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.2),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: _buildAvatarWidget(size: 90, fontSize: 34),
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: InkWell(
+                        onTap: _showUploadAvatarDialog,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _userProfile?.nama ?? _currentStudent.nama,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'NIS: ${_userProfile?.nis ?? _currentStudent.nis} • Kelas: ${_userProfile?.namaKelas ?? _currentStudent.namaKelas}',
+                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                ),
+                if (_userProfile?.email != null && _userProfile!.email.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    _userProfile!.email,
+                    style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                const Divider(),
+                const SizedBox(height: 12),
+
+                // Upload & Remove Photo Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.upload_rounded, size: 18),
+                        label: const Text('Unggah Foto'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: _showUploadAvatarDialog,
+                      ),
+                    ),
+                    if (_userProfile != null && _userProfile!.hasAvatar) ...[
+                      const SizedBox(width: 10),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.danger),
+                        label: const Text('Hapus Foto', style: TextStyle(color: AppColors.danger)),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.danger),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () async {
+                          try {
+                            await _examRepo.deleteAvatar();
+                            await _loadData();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Foto profil berhasil dihapus.'),
+                                  backgroundColor: AppColors.success,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Gagal menghapus avatar: $e'),
+                                  backgroundColor: AppColors.danger,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Menu Options Group
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.vpn_key_rounded, color: AppColors.primary),
+                  title: const Text('Ganti Kata Sandi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: const Text('Perbarui kata sandi akun CBT Anda', style: TextStyle(fontSize: 12)),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: _showChangePasswordDialog,
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.palette_outlined, color: AppColors.primary),
+                  title: const Text('Tema & Tampilan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: Text(
+                    'Tema: ${_userPreference?.theme.toUpperCase() ?? "SYSTEM"} | Kontras: ${_userPreference?.highContrast == true ? "TINGGI" : "NORMAL"}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: _showThemePreferencesDialog,
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.badge_outlined, color: AppColors.primary),
+                  title: const Text('Kartu Peserta Ujian', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: const Text('Buka kartu peserta CBT resmi Anda', style: TextStyle(fontSize: 12)),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => setState(() => _currentBottomIndex = 1),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Logout Button Card
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.logout_rounded, size: 20),
+              label: const Text('Keluar dari Akun (Logout)', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              onPressed: _handleLogout,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      );
+    }
+
+    String titleText = AppStrings.appName;
+    if (_currentBottomIndex == 1) titleText = 'Kartu Peserta Ujian';
+    if (_currentBottomIndex == 2) titleText = 'Sertifikat Kelulusan';
+    if (_currentBottomIndex == 3) titleText = 'Pusat Notifikasi';
+    if (_currentBottomIndex == 4) titleText = 'Profil Siswa';
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const Icon(Icons.assignment_turned_in_rounded, size: 24, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                titleText,
+                style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Perbarui Data',
+            onPressed: _loadData,
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            tooltip: AppStrings.btnLogout,
+            onPressed: _handleLogout,
+          ),
+        ],
+      ),
+
+      // IndexedStack for Bottom Navigation Tabs
+      body: IndexedStack(
+        index: _currentBottomIndex,
+        children: [
+          _buildHomeExamsTab(),
+          _buildStudentCardTab(),
+          _buildCertificatesTab(),
+          _buildNotificationsTab(),
+          _buildProfileTab(),
+        ],
+      ),
+
+      // Clean, Modern Bottom Navigation Bar
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentBottomIndex,
+          onTap: (index) {
+            setState(() {
+              _currentBottomIndex = index;
+            });
+            if (index == 1) _controller.loadStudentCard();
+            if (index == 2) _controller.loadCertificates();
+            if (index == 3) _loadData();
+          },
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.textSecondary,
+          selectedFontSize: 11,
+          unselectedFontSize: 11,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          elevation: 0,
+          items: [
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.assignment_outlined),
+              activeIcon: Icon(Icons.assignment_rounded, color: AppColors.primary),
+              label: 'Ujian',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.badge_outlined),
+              activeIcon: Icon(Icons.badge_rounded, color: AppColors.primary),
+              label: 'Kartu Ujian',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.workspace_premium_outlined),
+              activeIcon: Icon(Icons.workspace_premium_rounded, color: AppColors.primary),
+              label: 'Sertifikat',
+            ),
+            BottomNavigationBarItem(
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.notifications_outlined),
+                  if (_unreadNotifCount > 0)
+                    Positioned(
+                      right: -4,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: AppColors.danger,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                        child: Text(
+                          _unreadNotifCount > 9 ? '9+' : '$_unreadNotifCount',
+                          style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              activeIcon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.notifications_rounded, color: AppColors.primary),
+                  if (_unreadNotifCount > 0)
+                    Positioned(
+                      right: -4,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: AppColors.danger,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                        child: Text(
+                          _unreadNotifCount > 9 ? '9+' : '$_unreadNotifCount',
+                          style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              label: 'Notifikasi',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              activeIcon: Icon(Icons.person_rounded, color: AppColors.primary),
+              label: 'Profil',
             ),
           ],
         ),

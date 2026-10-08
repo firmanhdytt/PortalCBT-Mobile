@@ -260,6 +260,14 @@ class ExamRemoteDataSource {
     return false;
   }
 
+  Future<bool> deleteNotification(int id) async {
+    final res = await _client.delete(ApiEndpoints.deleteNotification(id));
+    if (res is Map<String, dynamic>) {
+      return res['status'] == 'success';
+    }
+    return false;
+  }
+
   Future<UserPreferenceModel> fetchUserPreferences() async {
     final res = await _client.get(ApiEndpoints.preferences);
     if (res is Map<String, dynamic> && res['data'] is Map<String, dynamic>) {

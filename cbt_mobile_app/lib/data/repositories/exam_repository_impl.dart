@@ -207,6 +207,11 @@ class ExamRepositoryImpl implements ExamRepository {
   }
 
   @override
+  Future<bool> deleteNotification(int id) async {
+    return await _remote.deleteNotification(id);
+  }
+
+  @override
   Future<UserPreference> getUserPreferences() async {
     return await _remote.fetchUserPreferences();
   }

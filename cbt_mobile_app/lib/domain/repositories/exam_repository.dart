@@ -48,6 +48,7 @@ abstract class ExamRepository {
   Future<int> getUnreadNotificationCount();
   Future<bool> markNotificationAsRead(int id);
   Future<bool> markAllNotificationsAsRead();
+  Future<bool> deleteNotification(int id);
   Future<UserPreference> getUserPreferences();
   Future<UserPreference> updateUserPreferences({String? theme, String? fontScale, bool? highContrast});
 }
