@@ -111,27 +111,37 @@ function getPageIdFromPath(pathname) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  try {
-    applyInitialTheme();
-    const token = localStorage.getItem("cbt_token");
-    const logged = localStorage.getItem("cbt_user");
-    const prof = localStorage.getItem("cbt_profil");
-    if (logged && token && logged !== "undefined") {
+  applyInitialTheme();
+  const token = localStorage.getItem("cbt_token");
+  const logged = localStorage.getItem("cbt_user");
+  const prof = localStorage.getItem("cbt_profil");
+
+  let restoredSuccessfully = false;
+  if (logged && token && logged !== "undefined" && token !== "undefined") {
+    try {
       currentUser = JSON.parse(logged);
       currentProfil = (prof && prof !== "undefined") ? JSON.parse(prof) : null;
       if (currentUser && currentUser.role) {
-        showAppLayout();
-        return;
+        restoredSuccessfully = true;
       }
+    } catch (err) {
+      console.error("Error parsing stored session:", err);
     }
-  } catch (err) {
-    console.error("Error restoring session:", err);
   }
-  localStorage.removeItem("cbt_token");
-  localStorage.removeItem("cbt_user");
-  localStorage.removeItem("cbt_profil");
-  showLoginLayout(false);
-  updateUrlPath('login', true);
+
+  if (restoredSuccessfully) {
+    try {
+      showAppLayout();
+    } catch (layoutErr) {
+      console.error("Error rendering app layout:", layoutErr);
+    }
+  } else {
+    localStorage.removeItem("cbt_token");
+    localStorage.removeItem("cbt_user");
+    localStorage.removeItem("cbt_profil");
+    showLoginLayout(false);
+    updateUrlPath('login', true);
+  }
 });
 
 window.addEventListener('popstate', (e) => {
@@ -281,28 +291,36 @@ function handleLogout() {
 }
 
 function showAppLayout() {
-  document.getElementById("login-screen").style.display = "none";
+  const loginScreen = document.getElementById("login-screen");
+  if (loginScreen) loginScreen.style.display = "none";
 
-  // Muat dan terapkan preferensi tampilan & jalankan polling notifikasi
-  initUserPreferences();
-  startNotificationPolling();
-
-  // Muat dan render profil & avatar terbaru
-  fetchAndRenderUserProfile();
+  // Muat dan terapkan preferensi tampilan & jalankan polling notifikasi (aman dari error)
+  try { initUserPreferences(); } catch(e) {}
+  try { startNotificationPolling(); } catch(e) {}
+  try { fetchAndRenderUserProfile(); } catch(e) {}
 
   if (currentUser.role === 'siswa') {
     // Tampilkan Khusus Modul Siswa, Sembunyikan Admin/Guru
-    document.getElementById("app-container").style.display = "none";
-    document.getElementById("siswa-container").style.display = "flex";
+    const appCont = document.getElementById("app-container");
+    if (appCont) appCont.style.display = "none";
+    const siswaCont = document.getElementById("siswa-container");
+    if (siswaCont) siswaCont.style.display = "flex";
     siswaInit();
   } else {
     // Tampilkan Khusus Modul Admin/Guru, Sembunyikan Siswa
-    document.getElementById("app-container").style.display = "flex";
-    document.getElementById("siswa-container").style.display = "none";
+    const appCont = document.getElementById("app-container");
+    if (appCont) appCont.style.display = "flex";
+    const siswaCont = document.getElementById("siswa-container");
+    if (siswaCont) siswaCont.style.display = "none";
 
-    document.getElementById("user-display-name").innerText = currentProfil ? currentProfil.nama : currentUser.username;
-    document.getElementById("user-display-sub").innerText = currentUser.role === 'admin' ? 'Administrator' : `NIP. ${currentProfil ? currentProfil.nip : '-'}`;
-    document.getElementById("role-badge").innerText = currentUser.role.toUpperCase() + " PANEL";
+    const displayName = document.getElementById("user-display-name");
+    if (displayName) displayName.innerText = currentProfil ? currentProfil.nama : currentUser.username;
+    
+    const displaySub = document.getElementById("user-display-sub");
+    if (displaySub) displaySub.innerText = currentUser.role === 'admin' ? 'Administrator' : `NIP. ${currentProfil ? currentProfil.nip : '-'}`;
+    
+    const roleBadge = document.getElementById("role-badge");
+    if (roleBadge) roleBadge.innerText = currentUser.role.toUpperCase() + " PANEL";
 
     const menuGuru = document.querySelectorAll(".menu-guru");
     const menuAdmin = document.querySelectorAll(".menu-admin");
