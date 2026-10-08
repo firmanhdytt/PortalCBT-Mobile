@@ -55,30 +55,61 @@ let studentSecondsRemaining = 0;
 // KENDALI UTAMA LAYAR & TABS (SPA LOGIC)
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
-  applyInitialTheme();
-  const token = localStorage.getItem("cbt_token");
-  const logged = localStorage.getItem("cbt_user");
-  const prof = localStorage.getItem("cbt_profil");
-  if (logged && token) {
-    currentUser = JSON.parse(logged);
-    currentProfil = prof ? JSON.parse(prof) : null;
-    showAppLayout();
-  } else {
-    showLoginLayout();
+  try {
+    applyInitialTheme();
+    const token = localStorage.getItem("cbt_token");
+    const logged = localStorage.getItem("cbt_user");
+    const prof = localStorage.getItem("cbt_profil");
+    if (logged && token && logged !== "undefined") {
+      currentUser = JSON.parse(logged);
+      currentProfil = (prof && prof !== "undefined") ? JSON.parse(prof) : null;
+      if (currentUser && currentUser.role) {
+        showAppLayout();
+        return;
+      }
+    }
+  } catch (err) {
+    console.error("Error restoring session:", err);
   }
+  localStorage.removeItem("cbt_token");
+  localStorage.removeItem("cbt_user");
+  localStorage.removeItem("cbt_profil");
+  showLoginLayout();
 });
 
 
 function showLoginLayout() {
-  document.getElementById("login-screen").style.display = "flex";
-  document.getElementById("app-container").style.display = "none";
-  document.getElementById("siswa-container").style.display = "none";
+  document.querySelectorAll(".modal").forEach(m => m.style.display = "none");
+  const overlay = document.getElementById("mobile-overlay");
+  if (overlay) overlay.style.display = "none";
+
+  const loginScreen = document.getElementById("login-screen");
+  if (loginScreen) {
+    loginScreen.style.display = "flex";
+    loginScreen.style.zIndex = "1000";
+  }
+  const appContainer = document.getElementById("app-container");
+  if (appContainer) appContainer.style.display = "none";
+  const siswaContainer = document.getElementById("siswa-container");
+  if (siswaContainer) siswaContainer.style.display = "none";
 }
 
-function quickFillLogin(u, p) {
-  document.getElementById("login-username").value = u;
-  document.getElementById("login-password").value = p;
-  showToast(`Autofill akun ${u.toUpperCase()} berhasil!`);
+function handleLoginSubmit(event) {
+  if (event) event.preventDefault();
+  handleLogin();
+}
+
+function quickFillLogin(u, p, autoSubmit = true) {
+  const uInput = document.getElementById("login-username");
+  const pInput = document.getElementById("login-password");
+  if (uInput) uInput.value = u;
+  if (pInput) pInput.value = p;
+  showToast(`🔑 Autofill ${u.toUpperCase()} siap...`);
+  if (autoSubmit) {
+    handleLogin();
+  } else if (pInput) {
+    pInput.focus();
+  }
 }
 
 function toggleWebPasswordVisibility(inputId, btn) {
@@ -101,18 +132,20 @@ function getGreetingTime() {
 }
 
 function handleLogin() {
-  const usernameInput = document.getElementById("login-username").value.trim();
-  const passwordInput = document.getElementById("login-password").value.trim();
+  const uEl = document.getElementById("login-username");
+  const pEl = document.getElementById("login-password");
+  const usernameInput = uEl ? uEl.value.trim() : "";
+  const passwordInput = pEl ? pEl.value.trim() : "";
   const btn = document.getElementById("btn-login-submit");
 
   if (!usernameInput || !passwordInput) {
-    showToast("Harap masukkan Username dan Password!");
+    showToast("⚠️ Harap masukkan Username dan Password!");
     return;
   }
 
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = `<span>MEMPROSES...</span> ⌛`;
+    btn.innerHTML = `<span>MEMPROSES MASUK...</span> ⌛`;
   }
 
   fetch('/api/auth/login', {
@@ -121,7 +154,9 @@ function handleLogin() {
     body: JSON.stringify({ username: usernameInput, password: passwordInput })
   })
   .then(res => {
-    if (!res.ok) throw new Error("Username atau Password salah!");
+    if (!res.ok) {
+      return res.json().then(e => { throw new Error(e.message || "Username atau Password salah!"); });
+    }
     return res.json();
   })
   .then(res => {
@@ -132,11 +167,11 @@ function handleLogin() {
     localStorage.setItem("cbt_user", JSON.stringify(currentUser));
     localStorage.setItem("cbt_profil", JSON.stringify(currentProfil));
     
-    showToast(`Login sukses! Selamat datang, ${currentProfil ? currentProfil.nama : currentUser.username}`);
+    showToast(`✓ Login sukses! Selamat datang, ${currentProfil ? currentProfil.nama : currentUser.username}`);
     showAppLayout();
   })
   .catch(err => {
-    showToast(err.message);
+    showToast("❌ " + err.message);
   })
   .finally(() => {
     if (btn) {

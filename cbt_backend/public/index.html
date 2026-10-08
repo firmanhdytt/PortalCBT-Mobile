@@ -49,21 +49,47 @@
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      background: radial-gradient(circle at top left, #1E3A8A 0%, #0F172A 60%, #0284C7 100%);
+      background: radial-gradient(circle at 10% 20%, #1E3A8A 0%, #0F172A 70%, #0284C7 100%);
       padding: 20px;
       position: relative;
+      z-index: 1000;
+      overflow: hidden;
+    }
+
+    .login-bg-glow {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.35;
+      pointer-events: none;
+    }
+    .glow-1 {
+      width: 320px;
+      height: 320px;
+      background: #2563EB;
+      top: -80px;
+      left: -80px;
+    }
+    .glow-2 {
+      width: 300px;
+      height: 300px;
+      background: #0284C7;
+      bottom: -80px;
+      right: -80px;
     }
 
     .login-card {
-      background: rgba(255, 255, 255, 0.98);
-      backdrop-filter: blur(12px);
-      padding: 35px 30px;
+      background: rgba(255, 255, 255, 0.97);
+      backdrop-filter: blur(16px);
+      padding: 38px 32px;
       border-radius: 24px;
       width: 100%;
-      max-width: 420px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      animation: slideUp 0.4s ease-out;
+      max-width: 430px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      position: relative;
+      z-index: 10;
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     @keyframes slideUp {
@@ -77,17 +103,17 @@
     }
 
     .login-brand-icon {
-      width: 60px;
-      height: 60px;
+      width: 64px;
+      height: 64px;
       background: linear-gradient(135deg, #2563EB, #1D4ED8);
       color: white;
-      border-radius: 16px;
+      border-radius: 18px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 28px;
-      margin-bottom: 12px;
-      box-shadow: 0 8px 16px -4px rgba(37, 99, 235, 0.4);
+      font-size: 30px;
+      margin-bottom: 14px;
+      box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.45);
     }
 
     .login-header h2 {
@@ -151,34 +177,41 @@
       cursor: pointer;
       font-size: 16px;
       color: var(--text-light);
+      z-index: 5;
     }
 
     .quick-test-badges {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       justify-content: center;
-      margin-top: 10px;
+      margin-top: 6px;
       margin-bottom: 20px;
       flex-wrap: wrap;
     }
 
     .quick-chip {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
-      padding: 4px 10px;
+      padding: 6px 14px;
       border-radius: 20px;
       background-color: #F1F5F9;
-      color: #475569;
+      color: #334155;
       cursor: pointer;
       transition: var(--transition);
-      border: 1px solid #E2E8F0;
+      border: 1.5px solid #E2E8F0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      user-select: none;
     }
 
     .quick-chip:hover {
-      background-color: #DBEAFE;
-      color: #1E40AF;
-      border-color: #93C5FD;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
     }
+    .chip-admin:hover { background: #EFF6FF; border-color: #2563EB; color: #1D4ED8; }
+    .chip-guru:hover { background: #ECFDF5; border-color: #10B981; color: #047857; }
+    .chip-siswa:hover { background: #F0F9FF; border-color: #06B6D4; color: #0E7490; }
 
     .btn {
       display: inline-flex;
@@ -1094,33 +1127,45 @@
 
   <!-- A. PORTAL MASUK / LOGIN -->
   <div id="login-screen">
+    <div class="login-bg-glow glow-1"></div>
+    <div class="login-bg-glow glow-2"></div>
+
     <div class="login-card">
       <div class="login-header">
-        <div class="login-brand-icon">💻</div>
+        <div class="login-brand-icon">🎓</div>
         <h2>PORTAL CBT</h2>
         <p>Sistem Ujian Berbasis Komputer & Mobile</p>
       </div>
 
+      <div style="text-align:center; margin-bottom:8px;">
+        <span style="font-size:11px; font-weight:700; color:var(--text-light); text-transform:uppercase; letter-spacing:0.5px;">Akses Cepat (Demo 1-Klik)</span>
+      </div>
       <div class="quick-test-badges">
-        <span class="quick-chip" onclick="quickFillLogin('admin','admin')">🔑 Admin</span>
-        <span class="quick-chip" onclick="quickFillLogin('guru','guru')">👨‍🏫 Guru</span>
-        <span class="quick-chip" onclick="quickFillLogin('siswa','siswa')">👨‍🎓 Siswa</span>
+        <span class="quick-chip chip-admin" onclick="quickFillLogin('admin','admin')">🔑 Admin</span>
+        <span class="quick-chip chip-guru" onclick="quickFillLogin('guru','guru')">👨‍🏫 Guru</span>
+        <span class="quick-chip chip-siswa" onclick="quickFillLogin('siswa','siswa')">👨‍🎓 Siswa</span>
       </div>
 
-      <div class="form-group">
-        <label for="login-username">Username / NIS</label>
-        <input type="text" id="login-username" class="form-control" placeholder="Ketik admin, guru, atau siswa...">
-      </div>
-      <div class="form-group">
-        <label for="login-password">Password</label>
-        <div class="password-wrapper">
-          <input type="password" id="login-password" class="form-control" placeholder="Masukkan password...">
-          <button type="button" class="password-toggle-btn" onclick="toggleWebPasswordVisibility('login-password', this)">👁️</button>
+      <form id="login-form" onsubmit="handleLoginSubmit(event)">
+        <div class="form-group">
+          <label for="login-username">Username / NIS</label>
+          <div style="position:relative;">
+            <input type="text" id="login-username" class="form-control" placeholder="Ketik admin, guru, atau siswa..." autocomplete="username" required style="padding-left:38px;">
+            <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); opacity:0.6; font-size:14px; pointer-events:none;">👤</span>
+          </div>
         </div>
-      </div>
-      <button class="btn btn-primary btn-block" id="btn-login-submit" onclick="handleLogin()">
-        <span>MASUK KE SISTEM</span> ➔
-      </button>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <div class="password-wrapper" style="position:relative;">
+            <input type="password" id="login-password" class="form-control" placeholder="Masukkan password..." autocomplete="current-password" required style="padding-left:38px; padding-right:38px;">
+            <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); opacity:0.6; font-size:14px; pointer-events:none;">🔒</span>
+            <button type="button" class="password-toggle-btn" onclick="toggleWebPasswordVisibility('login-password', this)">👁️</button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="btn-login-submit" style="font-size:15px; padding:13px; font-weight:700; border-radius:12px; margin-top:8px;">
+          <span>MASUK KE SISTEM</span> ➔
+        </button>
+      </form>
       
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px dashed #CBD5E1; text-align: center;">
         <p style="font-size: 12px; color: var(--text-light); margin-bottom: 10px; font-weight: 500;">Ujian praktis dari HP Android via Wi-Fi?</p>
