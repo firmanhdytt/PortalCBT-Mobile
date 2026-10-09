@@ -358,7 +358,11 @@ function showPage(pageId, evt, skipPush = false) {
     evt.preventDefault();
   }
 
-  const pageTarget = document.getElementById(`page-${pageId}`);
+  let pageTarget = document.getElementById(`page-${pageId}`);
+  if (!pageTarget) {
+    pageId = (currentUser && currentUser.role === 'admin') ? 'db-admin' : 'db-guru';
+    pageTarget = document.getElementById(`page-${pageId}`);
+  }
   if (!pageTarget) return;
 
   const pages = document.querySelectorAll(".page-view");

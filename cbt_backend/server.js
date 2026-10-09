@@ -44,9 +44,25 @@ app.get('/kartu-ujian/print/:siswaId', (req, res, next) => {
 // Mount All API Routes
 app.use('/api', routes);
 
+const fs = require('fs');
+
+// Dedicated APK Download Route
+app.get('/downloads/cbt-mobile.apk', (req, res) => {
+  const apkPath = path.join(__dirname, 'public', 'downloads', 'cbt-mobile.apk');
+  if (fs.existsSync(apkPath)) {
+    return res.download(apkPath, 'cbt-mobile.apk');
+  }
+  return res.status(404).send('File APK belum tersedia di server.');
+});
+
 // SPA Fallback Routing for Web Portal (HTML5 History API support)
 app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.startsWith('/sertifikat') || req.path.startsWith('/kartu-ujian')) {
+  if (
+    req.path.startsWith('/api') || 
+    req.path.startsWith('/sertifikat') || 
+    req.path.startsWith('/kartu-ujian') ||
+    path.extname(req.path)
+  ) {
     return next();
   }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
