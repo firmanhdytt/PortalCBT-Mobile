@@ -779,15 +779,16 @@ function deleteUjian(id) {
   if (confirm("Apakah Anda yakin ingin menghapus sesi ujian ini secara permanen?")) {
     fetch(`/api/guru/ujian/${id}`, { method: 'DELETE' })
       .then(res => {
-        if (!res.ok) throw new Error("Gagal menghapus sesi ujian!");
+        if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal menghapus sesi ujian!"); });
         return res.json();
       })
-      .then(() => {
-        showToast("Sesi ujian berhasil dihapus!");
-        loadDashboardGuru();
+      .then(res => {
+        showToast("✓ " + (res.message || "Sesi ujian berhasil dihapus!"));
+        try { loadDashboardGuru(); } catch(e) {}
+        try { loadExamsTable(); } catch(e) {}
       })
       .catch(err => {
-        showToast(err.message);
+        showToast("❌ " + (err.message || "Gagal menghapus sesi ujian"));
       });
   }
 }
@@ -971,15 +972,15 @@ function handleCreateBankSoal() {
   const mapel_id = document.getElementById("modal-bank-mapel") ? document.getElementById("modal-bank-mapel").value : '';
 
   if (!judul) {
-    showToast("Judul wajib diisi!", "danger");
+    showToast("⚠️ Judul wajib diisi!", "danger");
     return;
   }
   if (!kelas_id) {
-    showToast("Kelas wajib dipilih!", "danger");
+    showToast("⚠️ Kelas wajib dipilih!", "danger");
     return;
   }
   if (!mapel_id) {
-    showToast("Mata Pelajaran wajib dipilih!", "danger");
+    showToast("⚠️ Mata Pelajaran wajib dipilih!", "danger");
     return;
   }
 
@@ -993,19 +994,47 @@ function handleCreateBankSoal() {
       guru_id: currentProfil ? currentProfil.id : 1
     })
   })
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal membuat paket soal!"); });
+    return res.json();
+  })
   .then(data => {
-    if (data.error || data.statusCode >= 400 || (data.message && !data.id)) {
-      showToast(data.message || "Gagal membuat paket soal!", "danger");
-      return;
-    }
-    showToast("Paket soal berhasil dibuat!", "success");
+    showToast("✓ Paket soal berhasil dibuat!", "success");
+    document.getElementById("modal-bank-judul").value = "";
     closeModal('create-bank-modal');
-    loadBankSoalPage();
+    try { loadBankSoalPage(); } catch(e) {}
+    try { loadDashboardGuru(); } catch(e) {}
   })
   .catch(err => {
-    showToast("Terjadi kesalahan koneksi!", "danger");
+    showToast("❌ " + (err.message || "Terjadi kesalahan koneksi!"), "danger");
   });
+}
+
+function handleDeleteCurrentBankSoal() {
+  const bankSelect = document.getElementById("select-bank-soal");
+  const bankId = bankSelect ? bankSelect.value : '';
+  if (!bankId) {
+    showToast("⚠️ Silakan pilih Paket Soal yang ingin dihapus!", "warning");
+    return;
+  }
+
+  const selectedText = bankSelect.options[bankSelect.selectedIndex]?.text || "Paket Soal ini";
+  if (!confirm(`Apakah Anda yakin ingin menghapus "${selectedText}" beserta seluruh butir soal di dalamnya?`)) {
+    return;
+  }
+
+  fetch(`/api/guru/bank-soal/${bankId}`, { method: 'DELETE' })
+    .then(res => {
+      if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal menghapus paket soal!"); });
+      return res.json();
+    })
+    .then(res => {
+      showToast("✓ " + (res.message || "Paket soal berhasil dihapus!"));
+      try { loadBankSoalPage(); } catch(e) {}
+      try { loadDashboardGuru(); } catch(e) {}
+      loadQuestionsForBankSoal(null);
+    })
+    .catch(err => showToast("❌ " + (err.message || "Gagal menghapus paket soal")));
 }
 
 function updateCorrectOptionHighlight() {
@@ -1139,25 +1168,36 @@ function handleCreateQuestion() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   })
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal menyimpan soal"); });
+    return res.json();
+  })
   .then(() => {
-    showToast(editingSoalId ? "Soal berhasil diperbarui!" : "Soal berhasil ditambahkan!");
+    showToast("✓ " + (editingSoalId ? "Soal berhasil diperbarui!" : "Soal berhasil ditambahkan!"));
     closeModal('create-question-modal');
-    loadQuestionsForBankSoal(bankId);
-    
     editingSoalId = null;
     document.getElementById("modal-soal-teks").value = "";
     ['A', 'B', 'C', 'D', 'E'].forEach(l => document.getElementById(`opsi-${l}`).value = "");
+    try { loadQuestionsForBankSoal(bankId); } catch(e) {}
+  })
+  .catch(err => {
+    showToast("❌ " + (err.message || "Gagal menyimpan soal"));
   });
 }
 
 function deleteQuestion(id, bankId) {
-  if (confirm("Apakah yakin ingin menghapus soal ini?")) {
+  if (confirm("Apakah Anda yakin ingin menghapus butir soal ini?")) {
     fetch(`/api/guru/soal/${id}`, { method: 'DELETE' })
-      .then(res => res.json())
-      .then(() => {
-        showToast("Soal dihapus!");
-        loadQuestionsForBankSoal(bankId);
+      .then(res => {
+        if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal menghapus soal"); });
+        return res.json();
+      })
+      .then(res => {
+        showToast("✓ " + (res.message || "Soal berhasil dihapus!"));
+        try { loadQuestionsForBankSoal(bankId); } catch(e) {}
+      })
+      .catch(err => {
+        showToast("❌ " + (err.message || "Gagal menghapus butir soal"));
       });
   }
 }
@@ -1261,6 +1301,9 @@ function renderUjianTable(list) {
   }
 
   list.forEach(u => {
+    const deleteBtn = !u.is_aktif ? `
+      <button class="btn btn-danger" onclick="deleteUjian(${u.id})" style="padding: 4px 8px; font-size:12px; margin-left:4px;">🗑️ Hapus</button>
+    ` : '';
     tbody.innerHTML += `
       <tr>
         <td><strong>${u.nama_ujian}</strong></td>
@@ -1276,8 +1319,9 @@ function renderUjianTable(list) {
             ${u.is_aktif ? '✓ Aktif' : '⏸️ Nonaktif'}
           </button>
         </td>
-        <td style="text-align:center;">
+        <td style="text-align:center; white-space:nowrap;">
           <button class="btn btn-primary" onclick="goToMonitoring(${u.id})" style="padding: 4px 8px; font-size:12px;">📡 Monitor</button>
+          ${deleteBtn}
         </td>
       </tr>
     `;
@@ -1292,12 +1336,12 @@ function handleCreateUjian() {
   const token = document.getElementById("ujian-token").value.trim().toUpperCase();
 
   if (!nama) {
-    showToast("Nama Ujian wajib diisi!");
+    showToast("⚠️ Nama Ujian wajib diisi!");
     return;
   }
 
   if (!bankId || !kelasId) {
-    showToast("Harap pilih Paket Soal dan Kelas!");
+    showToast("⚠️ Harap pilih Paket Soal dan Kelas sasaran!");
     return;
   }
 
@@ -1306,21 +1350,35 @@ function handleCreateUjian() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nama_ujian: nama, bank_soal_id: bankId, kelas_id: kelasId, token, durasi_menit: durasi })
   })
-  .then(res => res.json())
-  .then(() => {
-    showToast("Sesi ujian berhasil dirilis!");
+  .then(res => {
+    if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal membuat sesi ujian"); });
+    return res.json();
+  })
+  .then(res => {
+    showToast("✓ " + (res.message || "Sesi ujian berhasil dirilis!"));
     document.getElementById("ujian-nama").value = "";
     document.getElementById("ujian-token").value = "";
-    loadExamsTable();
+    try { loadExamsTable(); } catch(e) {}
+    try { loadDashboardGuru(); } catch(e) {}
+  })
+  .catch(err => {
+    showToast("❌ " + (err.message || "Gagal membuat sesi ujian"));
   });
 }
 
 function toggleUjian(id) {
   fetch(`/api/guru/ujian/toggle/${id}`, { method: 'POST' })
-    .then(res => res.json())
-    .then(() => {
-      showToast("Status ujian berhasil diubah!");
-      loadExamsTable();
+    .then(res => {
+      if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal mengubah status ujian"); });
+      return res.json();
+    })
+    .then(res => {
+      showToast("✓ " + (res.message || "Status ujian berhasil diubah!"));
+      try { loadExamsTable(); } catch(e) {}
+      try { loadDashboardGuru(); } catch(e) {}
+    })
+    .catch(err => {
+      showToast("❌ " + (err.message || "Gagal mengubah status ujian"));
     });
 }
 
@@ -2046,8 +2104,8 @@ function handleAddSiswa() {
     document.getElementById("siswa-nama").value = "";
     document.getElementById("siswa-password").value = "";
     closeModal('modal-add-siswa');
-    loadStudentsTable();
-    loadDashboardAdmin();
+    try { loadStudentsTable(); } catch(e) {}
+    try { loadDashboardAdmin(); } catch(e) {}
   })
   .catch(err => showToast("❌ " + err.message));
 }
@@ -2061,8 +2119,8 @@ function deleteSiswa(id) {
       })
       .then(res => {
         showToast("✓ " + (res.message || "Siswa berhasil dihapus!"));
-        loadStudentsTable();
-        loadDashboardAdmin();
+        try { loadStudentsTable(); } catch(e) {}
+        try { loadDashboardAdmin(); } catch(e) {}
       })
       .catch(err => showToast("❌ " + err.message));
   }
@@ -2137,8 +2195,8 @@ function handleAddKelas() {
     showToast("✓ " + (res.message || "Kelas berhasil dibuat!"));
     document.getElementById("kelas-nama").value = "";
     closeModal('modal-add-kelas');
-    loadMasterKelasPage();
-    loadDashboardAdmin();
+    try { loadMasterKelasPage(); } catch(e) {}
+    try { loadDashboardAdmin(); } catch(e) {}
   })
   .catch(err => showToast("❌ " + err.message));
 }
@@ -2152,8 +2210,8 @@ function deleteKelas(id) {
       })
       .then(res => {
         showToast("✓ " + (res.message || "Kelas berhasil dihapus!"));
-        loadMasterKelasPage();
-        loadDashboardAdmin();
+        try { loadMasterKelasPage(); } catch(e) {}
+        try { loadDashboardAdmin(); } catch(e) {}
       })
       .catch(err => showToast("❌ " + err.message));
   }
@@ -2237,10 +2295,17 @@ function handleAddMapel() {
 function deleteMapel(id) {
   if (confirm("Apakah Anda yakin ingin menghapus mata pelajaran ini?")) {
     fetch(`/api/admin/mapel/${id}`, { method: 'DELETE' })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) return res.json().then(e => { throw new Error(e.message || "Gagal menghapus mata pelajaran"); });
+        return res.json();
+      })
       .then(res => {
         showToast("✓ " + (res.message || "Mata pelajaran berhasil dihapus!"));
-        loadMasterMapelPage();
+        try { loadMasterMapelPage(); } catch(e) {}
+        try { loadDashboardAdmin(); } catch(e) {}
+      })
+      .catch(err => {
+        showToast("❌ " + (err.message || "Gagal menghapus mata pelajaran"));
       });
   }
 }
@@ -3443,8 +3508,8 @@ function handleAddGuru() {
     document.getElementById("guru-email").value = "";
     document.getElementById("guru-password").value = "";
     closeModal('modal-add-guru');
-    loadMasterGuruPage();
-    loadDashboardAdmin();
+    try { loadMasterGuruPage(); } catch(e) {}
+    try { loadDashboardAdmin(); } catch(e) {}
   })
   .catch(err => showToast("❌ " + err.message));
 }
@@ -3537,8 +3602,8 @@ function handleSaveGuruAssignments() {
   .then(res => {
     showToast("✓ " + (res.message || "Penempatan berhasil disimpan!"));
     closeModal('modal-assign-guru');
-    loadMasterGuruPage();
-    loadDashboardAdmin();
+    try { loadMasterGuruPage(); } catch(e) {}
+    try { loadDashboardAdmin(); } catch(e) {}
   })
   .catch(err => showToast("❌ " + err.message));
 }
@@ -3553,8 +3618,8 @@ function handleDeleteGuru(guruId) {
     })
     .then(res => {
       showToast("✓ " + (res.message || "Guru berhasil dihapus!"));
-      loadMasterGuruPage();
-      loadDashboardAdmin();
+      try { loadMasterGuruPage(); } catch(e) {}
+      try { loadDashboardAdmin(); } catch(e) {}
     })
     .catch(err => showToast("❌ " + err.message));
 }

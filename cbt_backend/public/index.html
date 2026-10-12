@@ -1338,8 +1338,9 @@
           <div class="form-col" style="flex: 2;">
             <select id="select-bank-soal" class="form-control" onchange="loadQuestionsForBankSoal(this.value)"></select>
           </div>
-          <div class="form-col">
-            <button class="btn btn-success btn-block" onclick="openCreateQuestionModal()">+ Tambah Soal</button>
+          <div class="form-col" style="display:flex; gap:8px;">
+            <button class="btn btn-success" style="flex:1;" onclick="openCreateQuestionModal()">+ Tambah Soal</button>
+            <button class="btn btn-danger" style="white-space:nowrap;" onclick="handleDeleteCurrentBankSoal()" title="Hapus Paket Soal Terpilih">🗑️ Hapus Paket</button>
           </div>
         </div>
         <div class="card" style="margin-top: 20px;">

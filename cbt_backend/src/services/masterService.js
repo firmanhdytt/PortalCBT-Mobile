@@ -312,7 +312,10 @@ class MasterService {
     if (student.user_id) {
       await userRepo.deleteUser(student.user_id);
     }
-    await userRepo.deleteStudent(id);
+    const checkStudent = await userRepo.findStudentById(id);
+    if (checkStudent) {
+      await userRepo.deleteStudent(id);
+    }
     return true;
   }
 
@@ -428,7 +431,10 @@ class MasterService {
     if (guru.user_id) {
       await userRepo.deleteUser(guru.user_id);
     }
-    await masterRepo.deleteGuru(id);
+    const checkGuru = await masterRepo.findGuruById(id);
+    if (checkGuru) {
+      await masterRepo.deleteGuru(id);
+    }
     return true;
   }
 
