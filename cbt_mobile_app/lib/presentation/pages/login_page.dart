@@ -125,15 +125,15 @@ class _LoginPageState extends State<LoginPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Masukkan IP Server CBT Backend (contoh: 192.168.1.100:3000 atau 10.0.2.2:3000):',
+              'Domain server backend aktif saat ini:',
               style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: ipController,
               decoration: const InputDecoration(
-                hintText: '10.0.2.2:3000',
-                prefixIcon: Icon(Icons.computer, size: 20),
+                hintText: 'backend-cbt.solusibersamaa.com',
+                prefixIcon: Icon(Icons.cloud_done_outlined, size: 20),
               ),
             ),
           ],

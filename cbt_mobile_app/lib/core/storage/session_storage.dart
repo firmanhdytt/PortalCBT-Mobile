@@ -14,12 +14,20 @@ class SessionStorage {
 
   static Future<SessionStorage> init() async {
     final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_keyServerIp);
+    if (saved != null && (saved.contains('10.0.2.2') || saved.contains('localhost') || saved.contains('127.0.0.1') || saved.contains('192.168.'))) {
+      await prefs.setString(_keyServerIp, ApiEndpoints.defaultHost);
+    }
     return SessionStorage(prefs);
   }
 
   // Server IP
   String getServerIp() {
-    return _prefs.getString(_keyServerIp) ?? ApiEndpoints.defaultHost;
+    final saved = _prefs.getString(_keyServerIp);
+    if (saved == null || saved.isEmpty || saved.contains('10.0.2.2') || saved.contains('localhost') || saved.contains('127.0.0.1') || saved.contains('192.168.')) {
+      return ApiEndpoints.defaultHost;
+    }
+    return saved;
   }
 
   Future<bool> setServerIp(String ip) async {

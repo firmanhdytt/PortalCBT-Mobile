@@ -8,7 +8,11 @@ class ApiService {
   
   static Future<String> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
-    final ip = prefs.getString('server_ip') ?? defaultIp;
+    String? ip = prefs.getString('server_ip');
+    if (ip == null || ip.isEmpty || ip.contains('10.0.2.2') || ip.contains('localhost') || ip.contains('127.0.0.1') || ip.contains('192.168.')) {
+      ip = defaultIp;
+      await prefs.setString('server_ip', defaultIp);
+    }
     if (ip.startsWith('http://') || ip.startsWith('https://')) {
       return ip.endsWith('/api') ? ip : '$ip/api';
     }
@@ -17,12 +21,16 @@ class ApiService {
 
   static Future<void> setServerIp(String ip) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('server_ip', ip);
+    await prefs.setString('server_ip', ip.trim());
   }
 
   static Future<String> getServerIp() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('server_ip') ?? defaultIp;
+    String? ip = prefs.getString('server_ip');
+    if (ip == null || ip.isEmpty || ip.contains('10.0.2.2') || ip.contains('localhost') || ip.contains('127.0.0.1') || ip.contains('192.168.')) {
+      return defaultIp;
+    }
+    return ip;
   }
 
   static const Duration timeoutDuration = Duration(seconds: 10);
